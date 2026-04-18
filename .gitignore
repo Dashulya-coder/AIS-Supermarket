@@ -1,0 +1,50 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# Environment variables
+.env
+*.env
+!.env.example
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Compiled Object files, Static and Dynamic libs
+*.o
+*.a
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+# Go build output
+/backend/cmd/server/server*
+/backend/tmp/
