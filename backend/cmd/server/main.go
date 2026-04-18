@@ -48,6 +48,10 @@ func main() {
 	receiptService := service.NewReceiptService(receiptRepo, storeProductRepo, customerCardRepo)
 	receiptHandler := handlers.NewReceiptHandler(receiptService)
 
+	reportRepo := repository.NewReportRepository(database)
+	reportService := service.NewReportService(reportRepo)
+	reportHandler := handlers.NewReportHandler(reportService)
+
 	r := gin.Default()
 
 	// public routes
@@ -96,6 +100,10 @@ func main() {
 		managerGroup.GET("/receipts", receiptHandler.GetReceiptsByCashierAndPeriod)
 		managerGroup.GET("/receipts/all", receiptHandler.GetAllReceiptsByPeriod)
 		managerGroup.DELETE("/receipts/:receipt_number", receiptHandler.DeleteReceipt)
+
+		managerGroup.GET("/reports/sales-by-cashier", reportHandler.GetTotalSalesByCashierAndPeriod)
+		managerGroup.GET("/reports/sales-total", reportHandler.GetTotalSalesByPeriod)
+		managerGroup.GET("/reports/product-quantity", reportHandler.GetTotalQuantitySoldByUPC)
 	}
 
 	// routes for Manager and Cashier
