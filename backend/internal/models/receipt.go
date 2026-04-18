@@ -18,3 +18,13 @@ type CreateReceiptRequest struct {
 	CardNumber *string                  `json:"card_number"`
 	Items      []CreateReceiptItemInput `json:"items"`
 }
+
+type ReceiptFull struct {
+	ReceiptNumber string        `json:"receipt_number"`
+	CashierID     string        `json:"cashier_id"`
+	CardNumber    *string       `json:"card_number"`
+	PrintDate     string        `json:"print_date"`
+	SumTotal      float64       `json:"sum_total"`
+	Vat           float64       `json:"vat"`
+	Items         []ReceiptItem `json:"items"`
+}

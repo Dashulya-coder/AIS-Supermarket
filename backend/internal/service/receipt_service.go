@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/models"
@@ -66,7 +67,6 @@ func (s *ReceiptService) CreateReceipt(cashierID string, req models.CreateReceip
 		})
 	}
 
-	// discount
 	if req.CardNumber != nil {
 		card, err := s.customerCardRepo.GetByCardNumber(*req.CardNumber)
 		if err != nil {
@@ -98,6 +98,43 @@ func (s *ReceiptService) CreateReceipt(cashierID string, req models.CreateReceip
 	}
 
 	return receipt, nil
+}
+
+func (s *ReceiptService) GetByNumber(receiptNumber string) (*models.ReceiptFull, error) {
+	receiptNumber = strings.TrimSpace(receiptNumber)
+	if receiptNumber == "" {
+		return nil, errors.New("receipt number is required")
+	}
+
+	return s.receiptRepo.GetByNumber(receiptNumber)
+}
+
+func (s *ReceiptService) GetByCashierAndPeriod(cashierID, from, to string) ([]models.Receipt, error) {
+	if cashierID == "" {
+		return nil, errors.New("cashier id is required")
+	}
+	if from == "" || to == "" {
+		return nil, errors.New("from and to are required")
+	}
+
+	return s.receiptRepo.GetByCashierAndPeriod(cashierID, from, to)
+}
+
+func (s *ReceiptService) GetAllByPeriod(from, to string) ([]models.Receipt, error) {
+	if from == "" || to == "" {
+		return nil, errors.New("from and to are required")
+	}
+
+	return s.receiptRepo.GetAllByPeriod(from, to)
+}
+
+func (s *ReceiptService) Delete(receiptNumber string) error {
+	receiptNumber = strings.TrimSpace(receiptNumber)
+	if receiptNumber == "" {
+		return errors.New("receipt number is required")
+	}
+
+	return s.receiptRepo.Delete(receiptNumber)
 }
 
 func generateReceiptNumber() string {

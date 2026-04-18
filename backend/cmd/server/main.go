@@ -92,6 +92,10 @@ func main() {
 		managerGroup.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
 
 		managerGroup.DELETE("/customer-cards/:card_number", customerCardHandler.DeleteCustomerCard)
+
+		managerGroup.GET("/receipts", receiptHandler.GetReceiptsByCashierAndPeriod)
+		managerGroup.GET("/receipts/all", receiptHandler.GetAllReceiptsByPeriod)
+		managerGroup.DELETE("/receipts/:receipt_number", receiptHandler.DeleteReceipt)
 	}
 
 	// routes for Manager and Cashier
@@ -113,6 +117,8 @@ func main() {
 		sharedGroup.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
 
 		sharedGroup.POST("/receipts", receiptHandler.CreateReceipt)
+		sharedGroup.GET("/receipts/:receipt_number", receiptHandler.GetReceiptByNumber)
+		sharedGroup.GET("/receipts/my", receiptHandler.GetMyReceipts)
 	}
 
 	log.Println("Server started on :8080")
