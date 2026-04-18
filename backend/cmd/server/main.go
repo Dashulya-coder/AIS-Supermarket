@@ -5,11 +5,12 @@ import (
 
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/config"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/db"
-
+	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/handlers"
+	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/repository"
+	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
-// run server and app
 func main() {
 	cfg := config.New()
 
@@ -18,7 +19,9 @@ func main() {
 		log.Fatal("failed to connect to db:", err)
 	}
 
-	_ = database // поки просто перевірка
+	categoryRepo := repository.NewCategoryRepository(database)
+	categoryService := service.NewCategoryService(categoryRepo)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
 	r := gin.Default()
 
@@ -26,6 +29,11 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	r.GET("/categories", categoryHandler.GetAllCategories)
+	r.POST("/categories", categoryHandler.CreateCategory)
+
 	log.Println("Server started on :8080")
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatal("failed to start server:", err)
+	}
 }

@@ -40,7 +40,7 @@ INSERT INTO employees (id, surname, name, patronymic, position, salary, date_of_
        ('E003', 'Shevchenko', 'Olena', 'Ivanivna', 'Cashier', 13000, '1996-02-20', '2022-06-01', '380000000003', 'Kyiv', 'Lvivska', '01003');
 
 INSERT INTO users (employee_id, username, password_hash, role) VALUES
-//fake hashes
+
        ('E001', 'manager', '$2a$10$examplehash1', 'Manager'),
        ('E002', 'cashier1', '$2a$10$examplehash2', 'Cashier'),
        ('E003', 'cashier2', '$2a$10$examplehash3', 'Cashier');
