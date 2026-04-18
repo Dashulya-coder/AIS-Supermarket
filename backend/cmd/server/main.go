@@ -23,6 +23,10 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
+	productRepo := repository.NewProductRepository(database)
+	productService := service.NewProductService(productRepo)
+	productHandler := handlers.NewProductHandler(productService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -35,6 +39,12 @@ func main() {
 	r.PUT("/categories/:id", categoryHandler.UpdateCategory)
 	r.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 
+	r.GET("/products", productHandler.GetAllProducts)
+	r.GET("/products/:id", productHandler.GetProductByID)
+	r.POST("/products", productHandler.CreateProduct)
+	r.PUT("/products/:id", productHandler.UpdateProduct)
+	r.DELETE("/products/:id", productHandler.DeleteProduct)
+	
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("failed to start server:", err)
