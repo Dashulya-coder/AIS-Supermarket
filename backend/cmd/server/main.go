@@ -6,6 +6,7 @@ import (
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/config"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/db"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/handlers"
+	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/middleware"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/repository"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/service"
 	"github.com/gin-gonic/gin"
@@ -40,7 +41,7 @@ func main() {
 	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 
 	authRepo := repository.NewAuthRepository(database)
-	authService := service.NewAuthService(authRepo)
+	authService := service.NewAuthService(authRepo, cfg)
 	authHandler := handlers.NewAuthHandler(authService)
 
 	r := gin.Default()
@@ -80,6 +81,51 @@ func main() {
 	r.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
 
 	r.POST("/auth/login", authHandler.Login)
+
+	authGroup := r.Group("/")
+	authGroup.Use(middleware.AuthMiddleware(cfg))
+	{
+		authGroup.GET("/me", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"employee_id": c.GetString("employee_id"),
+				"username":    c.GetString("username"),
+				"role":        c.GetString("role"),
+			})
+		})
+	}
+
+	managerGroup := r.Group("/")
+	managerGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireRole("Manager"))
+	{
+		managerGroup.POST("/categories", categoryHandler.CreateCategory)
+		managerGroup.PUT("/categories/:id", categoryHandler.UpdateCategory)
+		managerGroup.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+		managerGroup.POST("/products", productHandler.CreateProduct)
+		managerGroup.PUT("/products/:id", productHandler.UpdateProduct)
+		managerGroup.DELETE("/products/:id", productHandler.DeleteProduct)
+
+		managerGroup.POST("/employees", employeeHandler.CreateEmployee)
+		managerGroup.PUT("/employees/:id", employeeHandler.UpdateEmployee)
+		managerGroup.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
+	}
+
+	sharedGroup := r.Group("/")
+	sharedGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireRole("Manager", "Cashier"))
+	{
+		sharedGroup.GET("/categories", categoryHandler.GetAllCategories)
+
+		sharedGroup.GET("/products", productHandler.GetAllProducts)
+		sharedGroup.GET("/products/:id", productHandler.GetProductByID)
+
+		sharedGroup.GET("/store-products", storeProductHandler.GetAllStoreProducts)
+		sharedGroup.GET("/store-products/:upc", storeProductHandler.GetStoreProductByUPC)
+
+		sharedGroup.GET("/customer-cards", customerCardHandler.GetAllCustomerCards)
+		sharedGroup.GET("/customer-cards/:card_number", customerCardHandler.GetCustomerCardByNumber)
+		sharedGroup.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
+		sharedGroup.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
+	}
 	
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
