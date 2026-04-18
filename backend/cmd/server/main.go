@@ -31,6 +31,9 @@ func main() {
 
 	r.GET("/categories", categoryHandler.GetAllCategories)
 	r.POST("/categories", categoryHandler.CreateCategory)
+	r.GET("/categories/:id", categoryHandler.GetCategoryByID)
+	r.PUT("/categories/:id", categoryHandler.UpdateCategory)
+	r.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
