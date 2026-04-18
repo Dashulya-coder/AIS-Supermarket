@@ -30,3 +30,21 @@ func (s *CategoryService) Create(category models.Category) error {
 
 	return s.repo.Create(category)
 }
+
+func (s *CategoryService) GetByID(id int) (*models.Category, error) {
+	return s.repo.GetByID(id)
+}
+
+func (s *CategoryService) Update(id int, category models.Category) error {
+	category.Name = strings.TrimSpace(category.Name)
+
+	if category.Name == "" {
+		return errors.New("category name cannot be empty")
+	}
+
+	return s.repo.Update(id, category)
+}
+
+func (s *CategoryService) Delete(id int) error {
+	return s.repo.Delete(id)
+}

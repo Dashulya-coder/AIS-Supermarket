@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/models"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/service"
@@ -49,4 +50,63 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "category created successfully",
 	})
+}
+
+func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
+	idParam := c.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	category, err := h.service.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	idParam := c.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var category models.Category
+
+	if err := c.ShouldBindJSON(&category); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := h.service.Update(id, category); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "category updated"})
+}
+
+func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
+	idParam := c.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := h.service.Delete(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "category deleted"})
 }

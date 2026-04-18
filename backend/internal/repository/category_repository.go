@@ -47,3 +47,29 @@ func (r *CategoryRepository) Create(category models.Category) error {
 	_, err := r.db.Exec(query, category.Name)
 	return err
 }
+
+func (r *CategoryRepository) GetByID(id int) (*models.Category, error) {
+	query := `SELECT id, name FROM categories WHERE id = $1`
+
+	var category models.Category
+	err := r.db.QueryRow(query, id).Scan(&category.ID, &category.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &category, nil
+}
+
+func (r *CategoryRepository) Update(id int, category models.Category) error {
+	query := `UPDATE categories SET name = $1 WHERE id = $2`
+
+	_, err := r.db.Exec(query, category.Name, id)
+	return err
+}
+
+func (r *CategoryRepository) Delete(id int) error {
+	query := `DELETE FROM categories WHERE id = $1`
+
+	_, err := r.db.Exec(query, id)
+	return err
+}
