@@ -7,6 +7,7 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+	JWTSecret  string
 }
 
 func New() *Config {
@@ -16,5 +17,6 @@ func New() *Config {
 		DBUser:     "postgres",
 		DBPassword: "postgres",
 		DBName:     "zlagoda",
+		JWTSecret:  "super-secret-key",
 	}
 }
