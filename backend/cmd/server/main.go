@@ -39,6 +39,10 @@ func main() {
 	employeeService := service.NewEmployeeService(employeeRepo)
 	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 
+	authRepo := repository.NewAuthRepository(database)
+	authService := service.NewAuthService(authRepo)
+	authHandler := handlers.NewAuthHandler(authService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -74,6 +78,8 @@ func main() {
 	r.POST("/employees", employeeHandler.CreateEmployee)
 	r.PUT("/employees/:id", employeeHandler.UpdateEmployee)
 	r.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
+
+	r.POST("/auth/login", authHandler.Login)
 	
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
