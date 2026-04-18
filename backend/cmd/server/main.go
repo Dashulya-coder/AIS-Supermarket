@@ -35,6 +35,10 @@ func main() {
 	customerCardService := service.NewCustomerCardService(customerCardRepo)
 	customerCardHandler := handlers.NewCustomerCardHandler(customerCardService)
 
+	employeeRepo := repository.NewEmployeeRepository(database)
+	employeeService := service.NewEmployeeService(employeeRepo)
+	employeeHandler := handlers.NewEmployeeHandler(employeeService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -64,6 +68,12 @@ func main() {
 	r.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
 	r.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
 	r.DELETE("/customer-cards/:card_number", customerCardHandler.DeleteCustomerCard)
+
+	r.GET("/employees", employeeHandler.GetAllEmployees)
+	r.GET("/employees/:id", employeeHandler.GetEmployeeByID)
+	r.POST("/employees", employeeHandler.CreateEmployee)
+	r.PUT("/employees/:id", employeeHandler.UpdateEmployee)
+	r.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
 	
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
