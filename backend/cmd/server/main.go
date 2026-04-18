@@ -44,6 +44,10 @@ func main() {
 	authService := service.NewAuthService(authRepo, cfg)
 	authHandler := handlers.NewAuthHandler(authService)
 
+	receiptRepo := repository.NewReceiptRepository(database)
+	receiptService := service.NewReceiptService(receiptRepo, storeProductRepo, customerCardRepo)
+	receiptHandler := handlers.NewReceiptHandler(receiptService)
+
 	r := gin.Default()
 
 	// public routes
@@ -107,6 +111,8 @@ func main() {
 		sharedGroup.GET("/customer-cards/:card_number", customerCardHandler.GetCustomerCardByNumber)
 		sharedGroup.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
 		sharedGroup.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
+
+		sharedGroup.POST("/receipts", receiptHandler.CreateReceipt)
 	}
 
 	log.Println("Server started on :8080")
