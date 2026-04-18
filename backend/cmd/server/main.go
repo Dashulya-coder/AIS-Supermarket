@@ -46,42 +46,13 @@ func main() {
 
 	r := gin.Default()
 
+	// public routes
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	r.GET("/categories", categoryHandler.GetAllCategories)
-	r.POST("/categories", categoryHandler.CreateCategory)
-	r.GET("/categories/:id", categoryHandler.GetCategoryByID)
-	r.PUT("/categories/:id", categoryHandler.UpdateCategory)
-	r.DELETE("/categories/:id", categoryHandler.DeleteCategory)
-
-	r.GET("/products", productHandler.GetAllProducts)
-	r.GET("/products/:id", productHandler.GetProductByID)
-	r.POST("/products", productHandler.CreateProduct)
-	r.PUT("/products/:id", productHandler.UpdateProduct)
-	r.DELETE("/products/:id", productHandler.DeleteProduct)
-
-	r.GET("/store-products", storeProductHandler.GetAllStoreProducts)
-	r.GET("/store-products/:upc", storeProductHandler.GetStoreProductByUPC)
-	r.POST("/store-products", storeProductHandler.CreateStoreProduct)
-	r.PUT("/store-products/:upc", storeProductHandler.UpdateStoreProduct)
-	r.DELETE("/store-products/:upc", storeProductHandler.DeleteStoreProduct)
-
-	r.GET("/customer-cards", customerCardHandler.GetAllCustomerCards)
-	r.GET("/customer-cards/:card_number", customerCardHandler.GetCustomerCardByNumber)
-	r.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
-	r.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
-	r.DELETE("/customer-cards/:card_number", customerCardHandler.DeleteCustomerCard)
-
-	r.GET("/employees", employeeHandler.GetAllEmployees)
-	r.GET("/employees/:id", employeeHandler.GetEmployeeByID)
-	r.POST("/employees", employeeHandler.CreateEmployee)
-	r.PUT("/employees/:id", employeeHandler.UpdateEmployee)
-	r.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
-
 	r.POST("/auth/login", authHandler.Login)
 
+	// authenticated routes for any logged-in user
 	authGroup := r.Group("/")
 	authGroup.Use(middleware.AuthMiddleware(cfg))
 	{
@@ -94,6 +65,7 @@ func main() {
 		})
 	}
 
+	// routes for Manager only
 	managerGroup := r.Group("/")
 	managerGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireRole("Manager"))
 	{
@@ -105,15 +77,25 @@ func main() {
 		managerGroup.PUT("/products/:id", productHandler.UpdateProduct)
 		managerGroup.DELETE("/products/:id", productHandler.DeleteProduct)
 
+		managerGroup.POST("/store-products", storeProductHandler.CreateStoreProduct)
+		managerGroup.PUT("/store-products/:upc", storeProductHandler.UpdateStoreProduct)
+		managerGroup.DELETE("/store-products/:upc", storeProductHandler.DeleteStoreProduct)
+
+		managerGroup.GET("/employees", employeeHandler.GetAllEmployees)
+		managerGroup.GET("/employees/:id", employeeHandler.GetEmployeeByID)
 		managerGroup.POST("/employees", employeeHandler.CreateEmployee)
 		managerGroup.PUT("/employees/:id", employeeHandler.UpdateEmployee)
 		managerGroup.DELETE("/employees/:id", employeeHandler.DeleteEmployee)
+
+		managerGroup.DELETE("/customer-cards/:card_number", customerCardHandler.DeleteCustomerCard)
 	}
 
+	// routes for Manager and Cashier
 	sharedGroup := r.Group("/")
 	sharedGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireRole("Manager", "Cashier"))
 	{
 		sharedGroup.GET("/categories", categoryHandler.GetAllCategories)
+		sharedGroup.GET("/categories/:id", categoryHandler.GetCategoryByID)
 
 		sharedGroup.GET("/products", productHandler.GetAllProducts)
 		sharedGroup.GET("/products/:id", productHandler.GetProductByID)
@@ -126,7 +108,7 @@ func main() {
 		sharedGroup.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
 		sharedGroup.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
 	}
-	
+
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("failed to start server:", err)
