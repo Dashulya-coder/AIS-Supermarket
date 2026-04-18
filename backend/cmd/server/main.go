@@ -129,8 +129,13 @@ func main() {
 		sharedGroup.GET("/receipts/my", receiptHandler.GetMyReceipts)
 	}
 
-	log.Println("Server started on :8080")
-	if err := r.Run(":8080"); err != nil {
+	port := cfg.AppPort
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Println("Server started on :" + port)
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
 }
