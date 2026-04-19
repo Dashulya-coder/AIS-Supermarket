@@ -26,6 +26,10 @@ export const Navbar = () => {
                 Receipts
             </Link>
 
+            <Link to="/store-products" style={{ color: "white" }}>
+                Store Products
+            </Link>
+
             <div style={{ marginLeft: "auto" }}>
                 {user?.username} ({user?.role})
             </div>
