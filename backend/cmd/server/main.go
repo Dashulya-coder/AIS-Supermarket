@@ -9,6 +9,7 @@ import (
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/middleware"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/repository"
 	"github.com/Dashulya-coder/AIS-Supermarket/backend/internal/service"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,6 +54,13 @@ func main() {
 	reportHandler := handlers.NewReportHandler(reportService)
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// public routes
 	r.GET("/health", func(c *gin.Context) {
