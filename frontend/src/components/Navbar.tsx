@@ -9,7 +9,7 @@ export const Navbar = () => {
     return (
         <nav className={styles.navbar}>
             <div className={styles.logo}>
-                🛒 <span>ZLAGODA</span>
+                <img src="/logo_2.jpg" alt="logo" width={120} height={40} />
             </div>
 
             <NavLink to="/categories" className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ""}`}>

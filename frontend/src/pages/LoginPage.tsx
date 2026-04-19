@@ -27,12 +27,12 @@ export const LoginPage = () => {
                     <div className={styles.logoIcon}>
                         <img src="/logo.jpg" alt="logo" width={150} height={150} />
                     </div>
-                    <p className={styles.subtitle}>Система управління супермаркетом</p>
+                    <p className={styles.subtitle}>Inventory Management System</p>
                 </div>
 
                 <form className={styles.form} onSubmit={handleLogin}>
                     <div className={styles.field}>
-                        <label className={styles.label}>Логін</label>
+                        <label className={styles.label}>Login</label>
                         <input
                             className={styles.input}
                             placeholder="username"
@@ -41,7 +41,7 @@ export const LoginPage = () => {
                         />
                     </div>
                     <div className={styles.field}>
-                        <label className={styles.label}>Пароль</label>
+                        <label className={styles.label}>Password</label>
                         <input
                             className={styles.input}
                             placeholder="your password"
@@ -51,7 +51,7 @@ export const LoginPage = () => {
                         />
                     </div>
                     {error && <p className={styles.error}>{error}</p>}
-                    <button className={styles.submitBtn} type="submit">Увійти</button>
+                    <button className={styles.submitBtn} type="submit">Login</button>
                 </form>
             </div>
         </div>
