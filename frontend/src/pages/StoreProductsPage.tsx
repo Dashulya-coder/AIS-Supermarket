@@ -6,6 +6,7 @@ import {
 } from "../api/storeProductsApi";
 import { getProducts } from "../api/productsApi";
 import { useAuth } from "../context/AuthContext";
+import styles from "../components/common.module.css";
 
 type StoreProduct = {
     upc: string;
@@ -30,6 +31,7 @@ export const StoreProductsPage = () => {
 
     const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [showForm, setShowForm] = useState(false);
 
     const [upc, setUpc] = useState("");
     const [upcProm, setUpcProm] = useState("");
@@ -40,23 +42,23 @@ export const StoreProductsPage = () => {
 
     const [filterPromotional, setFilterPromotional] = useState("all");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const loadData = async () => {
         try {
+            setLoading(true);
             setError("");
-
-            const promotionalParam =
-                filterPromotional === "all" ? undefined : filterPromotional;
-
+            const promotionalParam = filterPromotional === "all" ? undefined : filterPromotional;
             const [storeProductsData, productsData] = await Promise.all([
                 getStoreProducts(promotionalParam),
                 getProducts(),
             ]);
-
             setStoreProducts(storeProductsData);
             setProducts(productsData);
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to load store products");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -66,22 +68,14 @@ export const StoreProductsPage = () => {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (
-            !upc.trim() ||
-            !productId ||
-            sellingPrice === "" ||
-            productsNumber === ""
-        ) {
+        if (!upc.trim() || !productId || sellingPrice === "" || productsNumber === "") {
             setError("All required fields must be filled");
             return;
         }
-
         if (promotional && !upcProm.trim()) {
-            setError("Promotional product must have upc_prom");
+            setError("Promotional product must have UPC_PROM");
             return;
         }
-
         try {
             setError("");
             await createStoreProduct(
@@ -92,14 +86,13 @@ export const StoreProductsPage = () => {
                 Number(productsNumber),
                 promotional
             );
-
             setUpc("");
             setUpcProm("");
             setProductId("");
             setSellingPrice("");
             setProductsNumber("");
             setPromotional(false);
-
+            setShowForm(false);
             await loadData();
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to create store product");
@@ -116,132 +109,185 @@ export const StoreProductsPage = () => {
         }
     };
 
-    return (
-        <div>
-            <h1>Store Products</h1>
+    const getProductName = (id: number) =>
+        products.find((p) => p.id === id)?.name || id;
 
-            <div style={{ marginBottom: 16 }}>
-                <label>Filter: </label>
+    return (
+        <div className={styles.page}>
+            <h1 className={styles.pageTitle}>Store Products</h1>
+
+            <div className={styles.filterBar} style={{ marginTop: 16 }}>
                 <select
+                    className={styles.select}
+                    style={{ width: "auto" }}
                     value={filterPromotional}
                     onChange={(e) => setFilterPromotional(e.target.value)}
                 >
-                    <option value="all">All</option>
+                    <option value="all">All products</option>
                     <option value="true">Promotional only</option>
                     <option value="false">Non-promotional only</option>
                 </select>
+
+                {isManager && (
+                    <button
+                        className={`${styles.btn} ${styles.btnPrimary}`}
+                        onClick={() => setShowForm((v) => !v)}
+                    >
+                        {showForm ? "Cancel" : "+ Add Product"}
+                    </button>
+                )}
             </div>
 
-            {isManager && (
-                <form onSubmit={handleCreate} style={{ marginBottom: 24 }}>
-                    <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
-                        <input
-                            placeholder="UPC"
-                            value={upc}
-                            onChange={(e) => setUpc(e.target.value)}
-                        />
+            {showForm && isManager && (
+                <div className={styles.card} style={{ marginTop: 16 }}>
+                    <h3 className={styles.modalTitle}>New Store Product</h3>
+                    <form onSubmit={handleCreate}>
+                        <div className={styles.formRow}>
+                            <div className={styles.field}>
+                                <label className={styles.label}>UPC</label>
+                                <input
+                                    className={styles.input}
+                                    placeholder="UPC"
+                                    value={upc}
+                                    onChange={(e) => setUpc(e.target.value)}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Product</label>
+                                <select
+                                    className={styles.select}
+                                    value={productId}
+                                    onChange={(e) => setProductId(Number(e.target.value))}
+                                >
+                                    <option value="">Select product</option>
+                                    {products.map((p) => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Selling price</label>
+                                <input
+                                    className={styles.input}
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={sellingPrice}
+                                    onChange={(e) => setSellingPrice(Number(e.target.value))}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Quantity</label>
+                                <input
+                                    className={styles.input}
+                                    type="number"
+                                    placeholder="0"
+                                    value={productsNumber}
+                                    onChange={(e) => setProductsNumber(Number(e.target.value))}
+                                />
+                            </div>
+                        </div>
 
-                        <label>
+                        <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
                             <input
                                 type="checkbox"
+                                id="promotional"
                                 checked={promotional}
                                 onChange={(e) => setPromotional(e.target.checked)}
                             />
-                            Promotional product
-                        </label>
+                            <label htmlFor="promotional" className={styles.label} style={{ margin: 0 }}>
+                                Promotional product
+                            </label>
+                        </div>
 
                         {promotional && (
-                            <input
-                                placeholder="UPC_PROM"
-                                value={upcProm}
-                                onChange={(e) => setUpcProm(e.target.value)}
-                            />
+                            <div className={styles.field} style={{ marginTop: 12 }}>
+                                <label className={styles.label}>UPC_PROM</label>
+                                <input
+                                    className={styles.input}
+                                    placeholder="UPC_PROM"
+                                    value={upcProm}
+                                    onChange={(e) => setUpcProm(e.target.value)}
+                                />
+                            </div>
                         )}
 
-                        <select
-                            value={productId}
-                            onChange={(e) => setProductId(Number(e.target.value))}
-                        >
-                            <option value="">Select product</option>
-                            {products.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <input
-                            type="number"
-                            placeholder="Selling price"
-                            value={sellingPrice}
-                            onChange={(e) => setSellingPrice(Number(e.target.value))}
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Products number"
-                            value={productsNumber}
-                            onChange={(e) => setProductsNumber(Number(e.target.value))}
-                        />
-
-                        <button type="submit">Create</button>
-                    </div>
-                </form>
+                        <div className={styles.modalFooter}>
+                            <button
+                                type="button"
+                                className={`${styles.btn} ${styles.btnSecondary}`}
+                                onClick={() => setShowForm(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
+                                Create
+                            </button>
+                        </div>
+                    </form>
+                </div>
             )}
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {error && (
+                <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>
+                    {error}
+                </div>
+            )}
 
-            <table
-                style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "auto",
-                }}
-            >
-                <thead>
-                <tr>
-                    <th>UPC</th>
-                    <th>UPC_PROM</th>
-                    <th>Product ID</th>
-                    <th>Selling Price</th>
-                    <th>Products Number</th>
-                    <th>Promotional</th>
-                    {isManager && <th>Actions</th>}
-                </tr>
-                </thead>
-                <tbody>
-                {storeProducts.map((sp) => (
-                    <tr key={sp.upc}>
-                        <td
-                            style={{
-                                minWidth: 50,
-                                whiteSpace: "nowrap",
-                            }}
-                        >
-                            {sp.upc}
-                        </td>
-
-                        <td
-                            style={{
-                                minWidth: 50,
-                                whiteSpace: "nowrap",
-                            }}
-                        >
-                            {sp.upc_prom ?? "-"}
-                        </td>
-                        <td>{sp.product_id}</td>
-                        <td>{sp.selling_price}</td>
-                        <td>{sp.products_number}</td>
-                        <td>{sp.promotional_product ? "Yes" : "No"}</td>
-                        {isManager && (
-                            <td>
-                                <button onClick={() => handleDelete(sp.upc)}>Delete</button>
-                            </td>
-                        )}
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+            {loading ? (
+                <div className={styles.loading}>Loading...</div>
+            ) : storeProducts.length === 0 ? (
+                <div className={styles.empty}>
+                    <p>No store products found</p>
+                </div>
+            ) : (
+                <div className={styles.tableWrap} style={{ marginTop: 24 }}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>UPC</th>
+                                <th>UPC Promo</th>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Promotional</th>
+                                {isManager && <th style={{ textAlign: "right" }}>Actions</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {storeProducts.map((sp) => (
+                                <tr key={sp.upc}>
+                                    <td><code style={{ fontSize: 13 }}>{sp.upc}</code></td>
+                                    <td>{sp.upc_prom ?? "—"}</td>
+                                    <td>
+                                        <span className={`${styles.badge} ${styles.badgeAccent}`}>
+                                            {getProductName(sp.product_id)}
+                                        </span>
+                                    </td>
+                                    <td>{sp.selling_price} ₴</td>
+                                    <td>{sp.products_number}</td>
+                                    <td>
+                                        {sp.promotional_product ? (
+                                            <span className={`${styles.badge} ${styles.badgeSuccess}`}>Yes</span>
+                                        ) : (
+                                            <span className={`${styles.badge} ${styles.badgeWarning}`}>No</span>
+                                        )}
+                                    </td>
+                                    {isManager && (
+                                        <td style={{ textAlign: "right" }}>
+                                            <button
+                                                className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                                                onClick={() => handleDelete(sp.upc)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
