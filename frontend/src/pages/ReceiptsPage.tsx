@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { createReceipt, getMyReceipts, getReceiptByNumber } from "../api/receiptsApi";
+import { getStoreProducts } from "../api/storeProductsApi";
+import { getCustomerCards } from "../api/customerCardsApi";
+import { useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 type ReceiptItemInput = {
     upc: string;
@@ -31,11 +35,34 @@ type ReceiptFull = {
     }[];
 };
 
+type StoreProduct = {
+    upc: string;
+    upc_prom: string | null;
+    product_id: number;
+    selling_price: number;
+    products_number: number;
+    promotional_product: boolean;
+};
+
+type CustomerCard = {
+    card_number: string;
+    surname: string;
+    name: string;
+    patronymic: string | null;
+    phone: string;
+    city: string | null;
+    street: string | null;
+    zip_code: string | null;
+    percent: number;
+};
+
 export const ReceiptsPage = () => {
     const [cardNumber, setCardNumber] = useState("");
     const [items, setItems] = useState<ReceiptItemInput[]>([
         { upc: "", product_number: 1 },
     ]);
+    const { user } = useAuth();
+    const isCashier = user?.role === "Cashier";
 
     const [from, setFrom] = useState("2026-04-01 00:00:00");
     const [to, setTo] = useState("2026-04-30 23:59:59");
@@ -46,6 +73,9 @@ export const ReceiptsPage = () => {
     const [myReceipts, setMyReceipts] = useState<Receipt[]>([]);
     const [receiptDetails, setReceiptDetails] = useState<ReceiptFull | null>(null);
     const [error, setError] = useState("");
+
+    const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
+    const [customerCards, setCustomerCards] = useState<CustomerCard[]>([]);
 
     const handleItemChange = (index: number, field: keyof ReceiptItemInput, value: string | number) => {
         const updated = [...items];
@@ -65,6 +95,24 @@ export const ReceiptsPage = () => {
         setItems(items.filter((_, i) => i !== index));
     };
 
+    useEffect(() => {
+        const loadOptions = async () => {
+            try {
+                const [storeProductsData, customerCardsData] = await Promise.all([
+                    getStoreProducts(),
+                    getCustomerCards(),
+                ]);
+
+                setStoreProducts(Array.isArray(storeProductsData) ? storeProductsData : []);
+                setCustomerCards(Array.isArray(customerCardsData) ? customerCardsData : []);
+            } catch (err: any) {
+                setError(err?.response?.data?.error || "Failed to load form options");
+            }
+        };
+
+        loadOptions();
+    }, []);
+
     const handleCreateReceipt = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -78,6 +126,13 @@ export const ReceiptsPage = () => {
                 setError("Each item must have valid upc and product number");
                 return;
             }
+        }
+        const upcs = items.map((item) => item.upc.trim());
+        const uniqueUpcs = new Set(upcs);
+
+        if (uniqueUpcs.size !== upcs.length) {
+            setError("The same UPC cannot be added twice");
+            return;
         }
 
         try {
@@ -127,24 +182,37 @@ export const ReceiptsPage = () => {
 
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <section style={{ marginBottom: 32 }}>
-                <h2>Create Receipt</h2>
+            {isCashier && (
+                <section style={{ marginBottom: 32 }}>
+                    <h2>Create Receipt</h2>
 
                 <form onSubmit={handleCreateReceipt}>
                     <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
-                        <input
-                            placeholder="Card number (optional)"
+                        <select
                             value={cardNumber}
                             onChange={(e) => setCardNumber(e.target.value)}
-                        />
+                        >
+                            <option value="">No card</option>
+                            {customerCards.map((card) => (
+                                <option key={card.card_number} value={card.card_number}>
+                                    {card.card_number} - {card.surname} {card.name}
+                                </option>
+                            ))}
+                        </select>
 
                         {items.map((item, index) => (
                             <div key={index} style={{ display: "flex", gap: 8 }}>
-                                <input
-                                    placeholder="UPC"
+                                <select
                                     value={item.upc}
                                     onChange={(e) => handleItemChange(index, "upc", e.target.value)}
-                                />
+                                >
+                                    <option value="">Select UPC</option>
+                                    {storeProducts.map((sp) => (
+                                        <option key={sp.upc} value={sp.upc}>
+                                            {sp.upc} ({sp.promotional_product ? "Promo" : "Regular"}) - price: {sp.selling_price} - qty: {sp.products_number}
+                                        </option>
+                                    ))}
+                                </select>
                                 <input
                                     type="number"
                                     placeholder="Product number"
@@ -176,10 +244,12 @@ export const ReceiptsPage = () => {
                         <p>VAT: {createdReceipt.vat}</p>
                     </div>
                 )}
-            </section>
+                </section>
+            )}
 
-            <section style={{ marginBottom: 32 }}>
-                <h2>My Receipts</h2>
+            {isCashier && (
+                <section style={{ marginBottom: 32 }}>
+                    <h2>My Receipts</h2>
 
                 <form onSubmit={handleGetMyReceipts} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <input
@@ -223,7 +293,8 @@ export const ReceiptsPage = () => {
                         </tbody>
                     </table>
                 )}
-            </section>
+                </section>
+            )}
 
             <section>
                 <h2>Receipt Details</h2>

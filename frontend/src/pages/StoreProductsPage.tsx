@@ -214,7 +214,7 @@ export const StoreProductsPage = () => {
                     <tr key={sp.upc}>
                         <td
                             style={{
-                                minWidth: 120,
+                                minWidth: 50,
                                 whiteSpace: "nowrap",
                             }}
                         >
@@ -223,7 +223,7 @@ export const StoreProductsPage = () => {
 
                         <td
                             style={{
-                                minWidth: 120,
+                                minWidth: 50,
                                 whiteSpace: "nowrap",
                             }}
                         >
