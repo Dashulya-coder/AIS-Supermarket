@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-    createEmployee,
-    deleteEmployee,
-    getCashiers,
-    getEmployees,
-} from "../api/employeesApi";
+import { createEmployee, deleteEmployee, getCashiers, getEmployees } from "../api/employeesApi";
 import { useAuth } from "../context/AuthContext";
+import styles from "../components/common.module.css";
 
 type Employee = {
     id: string;
@@ -28,7 +24,9 @@ export const EmployeesPage = () => {
 
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [showCashiersOnly, setShowCashiersOnly] = useState(false);
+    const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const [id, setId] = useState("");
     const [surname, setSurname] = useState("");
@@ -43,100 +41,52 @@ export const EmployeesPage = () => {
     const [street, setStreet] = useState("");
     const [zipCode, setZipCode] = useState("");
 
-    const isValidNameField = (value: string) => {
-        return /^[A-Za-zА-Яа-яІіЇїЄєҐґ' -]+$/.test(value);
-    };
+    const isValidNameField = (value: string) =>
+        /^[A-Za-zА-Яа-яІіЇїЄєҐґ' -]+$/.test(value);
 
     const loadEmployees = async () => {
         try {
+            setLoading(true);
             setError("");
             const data = showCashiersOnly ? await getCashiers() : await getEmployees();
             setEmployees(Array.isArray(data) ? data : []);
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to load employees");
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (isManager) {
-            loadEmployees();
-        }
+        if (isManager) loadEmployees();
     }, [showCashiersOnly, isManager]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (
-            !id.trim() ||
-            !surname.trim() ||
-            !name.trim() ||
-            salary === "" ||
-            !dateOfBirth.trim() ||
-            !dateOfStart.trim() ||
-            !phone.trim() ||
-            !city.trim() ||
-            !street.trim() ||
-            !zipCode.trim()
-        ) {
+        if (!id.trim() || !surname.trim() || !name.trim() || salary === "" ||
+            !dateOfBirth.trim() || !dateOfStart.trim() || !phone.trim() ||
+            !city.trim() || !street.trim() || !zipCode.trim()) {
             setError("All required fields must be filled");
             return;
         }
-
-        if (!isValidNameField(surname.trim())) {
-            setError("Surname must contain only letters");
-            return;
-        }
-
-        if (!isValidNameField(name.trim())) {
-            setError("Name must contain only letters");
-            return;
-        }
-
-        if (patronymic.trim() && !isValidNameField(patronymic.trim())) {
-            setError("Patronymic must contain only letters");
-            return;
-        }
-
-        if (phone.trim().length > 13) {
-            setError("Phone must not be longer than 13 characters");
-            return;
-        }
-
-        if (Number(salary) < 0) {
-            setError("Salary cannot be negative");
-            return;
-        }
+        if (!isValidNameField(surname.trim())) { setError("Surname must contain only letters"); return; }
+        if (!isValidNameField(name.trim())) { setError("Name must contain only letters"); return; }
+        if (patronymic.trim() && !isValidNameField(patronymic.trim())) { setError("Patronymic must contain only letters"); return; }
+        if (phone.trim().length > 13) { setError("Phone must not be longer than 13 characters"); return; }
+        if (Number(salary) < 0) { setError("Salary cannot be negative"); return; }
 
         try {
             setError("");
             await createEmployee(
-                id.trim(),
-                surname.trim(),
-                name.trim(),
-                patronymic.trim() || null,
-                position,
-                Number(salary),
-                dateOfBirth.trim(),
-                dateOfStart.trim(),
-                phone.trim(),
-                city.trim(),
-                street.trim(),
-                zipCode.trim()
+                id.trim(), surname.trim(), name.trim(),
+                patronymic.trim() || null, position, Number(salary),
+                dateOfBirth.trim(), dateOfStart.trim(), phone.trim(),
+                city.trim(), street.trim(), zipCode.trim()
             );
-
-            setId("");
-            setSurname("");
-            setName("");
-            setPatronymic("");
-            setPosition("Cashier");
-            setSalary("");
-            setDateOfBirth("");
-            setDateOfStart("");
-            setPhone("");
-            setCity("");
-            setStreet("");
-            setZipCode("");
-
+            setId(""); setSurname(""); setName(""); setPatronymic("");
+            setPosition("Cashier"); setSalary(""); setDateOfBirth("");
+            setDateOfStart(""); setPhone(""); setCity(""); setStreet(""); setZipCode("");
+            setShowForm(false);
             await loadEmployees();
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to create employee");
@@ -154,163 +104,151 @@ export const EmployeesPage = () => {
     };
 
     if (!isManager) {
-        return <p>Access denied</p>;
+        return (
+            <div className={styles.page}>
+                <div className={styles.empty}><p>Access denied</p></div>
+            </div>
+        );
     }
 
     return (
-        <div>
-            <h1>Employees</h1>
+        <div className={styles.page}>
+            <h1 className={styles.pageTitle}>Employees</h1>
 
-            <div style={{ marginBottom: 16 }}>
-                <label>
+            <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                     <input
                         type="checkbox"
                         checked={showCashiersOnly}
                         onChange={(e) => setShowCashiersOnly(e.target.checked)}
                     />
-                    Show cashiers only
+                    <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+                        Show cashiers only
+                    </span>
                 </label>
+                <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    onClick={() => setShowForm((v) => !v)}
+                >
+                    {showForm ? "Cancel" : "+ Add Employee"}
+                </button>
             </div>
 
-            <form onSubmit={handleCreate} style={{ marginBottom: 24 }}>
-                <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
-                    <input
-                        placeholder="ID"
-                        value={id}
-                        onChange={(e) => setId(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Surname"
-                        value={surname}
-                        onChange={(e) => setSurname(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Patronymic"
-                        value={patronymic}
-                        onChange={(e) => setPatronymic(e.target.value)}
-                    />
-
-                    <select value={position} onChange={(e) => setPosition(e.target.value)}>
-                        <option value="Cashier">Cashier</option>
-                        <option value="Manager">Manager</option>
-                    </select>
-
-                    <input
-                        type="number"
-                        placeholder="Salary"
-                        value={salary}
-                        onChange={(e) => setSalary(Number(e.target.value))}
-                    />
-
-                    <input
-                        placeholder="Date of birth (YYYY-MM-DD)"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Date of start (YYYY-MM-DD)"
-                        value={dateOfStart}
-                        onChange={(e) => setDateOfStart(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="City"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Street"
-                        value={street}
-                        onChange={(e) => setStreet(e.target.value)}
-                    />
-
-                    <input
-                        placeholder="Zip code"
-                        value={zipCode}
-                        onChange={(e) => setZipCode(e.target.value)}
-                    />
-
-                    <button type="submit">Create Employee</button>
+            {showForm && (
+                <div className={styles.card} style={{ marginTop: 16 }}>
+                    <h3 className={styles.modalTitle}>New Employee</h3>
+                    <form onSubmit={handleCreate}>
+                        <div className={styles.formRow}>
+                            <div className={styles.field}>
+                                <label className={styles.label}>ID *</label>
+                                <input className={styles.input} placeholder="E001" value={id} onChange={(e) => setId(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Surname *</label>
+                                <input className={styles.input} placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Name *</label>
+                                <input className={styles.input} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Patronymic</label>
+                                <input className={styles.input} placeholder="Patronymic" value={patronymic} onChange={(e) => setPatronymic(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Position *</label>
+                                <select className={styles.select} value={position} onChange={(e) => setPosition(e.target.value)}>
+                                    <option value="Cashier">Cashier</option>
+                                    <option value="Manager">Manager</option>
+                                </select>
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Salary *</label>
+                                <input className={styles.input} type="number" min="0" placeholder="0" value={salary} onChange={(e) => setSalary(Number(e.target.value))} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Date of birth *</label>
+                                <input className={styles.input} type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Date of start *</label>
+                                <input className={styles.input} type="date" value={dateOfStart} onChange={(e) => setDateOfStart(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Phone *</label>
+                                <input className={styles.input} placeholder="+380..." value={phone} onChange={(e) => setPhone(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>City *</label>
+                                <input className={styles.input} placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Street *</label>
+                                <input className={styles.input} placeholder="Street" value={street} onChange={(e) => setStreet(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Zip code *</label>
+                                <input className={styles.input} placeholder="01001" value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setShowForm(false)}>Cancel</button>
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Create Employee</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            )}
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {error && <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>{error}</div>}
 
-            {employees.length === 0 ? (
-                <p>No employees found</p>
+            {loading ? (
+                <div className={styles.loading}>Loading...</div>
+            ) : employees.length === 0 ? (
+                <div className={styles.empty}><p>No employees found</p></div>
             ) : (
-                <table
-                    style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                    }}
-                >
-                    <thead>
-                    <tr>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            ID
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Surname
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Name
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Position
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Salary
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Phone
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            City
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Date of Start
-                        </th>
-                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
-                            Actions
-                        </th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {employees.map((employee) => (
-                        <tr key={employee.id}>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.id}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.surname}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.name}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.position}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.salary}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.phone}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.city}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.date_of_start}</td>
-                            <td style={{ border: "1px solid #ddd", padding: 10 }}>
-                                <button onClick={() => handleDelete(employee.id)}>Delete</button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
+                <div className={styles.tableWrap} style={{ marginTop: 24 }}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Surname</th>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Salary</th>
+                                <th>Phone</th>
+                                <th>City</th>
+                                <th>Start Date</th>
+                                <th style={{ textAlign: "right" }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {employees.map((emp) => (
+                                <tr key={emp.id}>
+                                    <td><code style={{ fontSize: 13 }}>{emp.id}</code></td>
+                                    <td>{emp.surname}</td>
+                                    <td>{emp.name}</td>
+                                    <td>
+                                        <span className={`${styles.badge} ${emp.position === "Manager" ? styles.badgeAccent : styles.badgeSuccess}`}>
+                                            {emp.position}
+                                        </span>
+                                    </td>
+                                    <td>{Number(emp.salary).toLocaleString()} ₴</td>
+                                    <td>{emp.phone}</td>
+                                    <td>{emp.city}</td>
+                                    <td>{emp.date_of_start?.split("T")[0]}</td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <button
+                                            className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                                            onClick={() => handleDelete(emp.id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );
