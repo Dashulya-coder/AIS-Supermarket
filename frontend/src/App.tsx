@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout";
 import { ProductsPage } from "./pages/ProductsPage";
 import { StoreProductsPage } from "./pages/StoreProductsPage";
 import { CustomerCardsPage } from "./pages/CustomerCardsPage";
+import { ReceiptsPage } from "./pages/ReceiptsPage";
 
 function App() {
     return (
@@ -53,6 +54,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <CustomerCardsPage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/receipts"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <ReceiptsPage />
                                 </Layout>
                             </ProtectedRoute>
                         }

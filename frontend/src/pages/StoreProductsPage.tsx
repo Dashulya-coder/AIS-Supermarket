@@ -191,7 +191,13 @@ export const StoreProductsPage = () => {
 
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <table>
+            <table
+                style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "auto",
+                }}
+            >
                 <thead>
                 <tr>
                     <th>UPC</th>
@@ -206,8 +212,23 @@ export const StoreProductsPage = () => {
                 <tbody>
                 {storeProducts.map((sp) => (
                     <tr key={sp.upc}>
-                        <td>{sp.upc}</td>
-                        <td>{sp.upc_prom ?? "-"}</td>
+                        <td
+                            style={{
+                                minWidth: 120,
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {sp.upc}
+                        </td>
+
+                        <td
+                            style={{
+                                minWidth: 120,
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {sp.upc_prom ?? "-"}
+                        </td>
                         <td>{sp.product_id}</td>
                         <td>{sp.selling_price}</td>
                         <td>{sp.products_number}</td>
