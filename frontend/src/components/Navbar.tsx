@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 
 export const Navbar = () => {
     const { user } = useAuth();
+    const isManager = user?.role === "Manager";
 
     return (
         <div
@@ -22,10 +23,6 @@ export const Navbar = () => {
                 Products
             </Link>
 
-            <Link to="/receipts" style={{ color: "white" }}>
-                Receipts
-            </Link>
-
             <Link to="/store-products" style={{ color: "white" }}>
                 Store Products
             </Link>
@@ -33,6 +30,16 @@ export const Navbar = () => {
             <Link to="/customer-cards" style={{ color: "white" }}>
                 Customer Cards
             </Link>
+
+            <Link to="/receipts" style={{ color: "white" }}>
+                Receipts
+            </Link>
+
+            {isManager && (
+                <Link to="/reports" style={{ color: "white" }}>
+                    Reports
+                </Link>
+            )}
 
             <div style={{ marginLeft: "auto" }}>
                 {user?.username} ({user?.role})

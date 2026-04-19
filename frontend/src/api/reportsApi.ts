@@ -1,0 +1,34 @@
+import { api } from "./client";
+
+export const getSalesByCashier = async (
+    cashierId: string,
+    from: string,
+    to: string
+) => {
+    const res = await api.get(
+        `/reports/sales-by-cashier?cashier_id=${encodeURIComponent(
+            cashierId
+        )}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    return res.data;
+};
+
+export const getSalesTotal = async (from: string, to: string) => {
+    const res = await api.get(
+        `/reports/sales-total?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    return res.data;
+};
+
+export const getProductQuantity = async (
+    upc: string,
+    from: string,
+    to: string
+) => {
+    const res = await api.get(
+        `/reports/product-quantity?upc=${encodeURIComponent(
+            upc
+        )}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    return res.data;
+};
