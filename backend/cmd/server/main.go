@@ -15,6 +15,10 @@ import (
 
 func main() {
 	cfg := config.New()
+	log.Println("DB_HOST:", cfg.DBHost)
+	log.Println("DB_PORT:", cfg.DBPort)
+	log.Println("DB_USER:", cfg.DBUser)
+	log.Println("DB_NAME:", cfg.DBName)
 
 	database, err := db.NewPostgresDB(cfg)
 	if err != nil {
