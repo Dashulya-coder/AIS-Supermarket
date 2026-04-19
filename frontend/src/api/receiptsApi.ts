@@ -20,3 +20,23 @@ export const getReceiptByNumber = async (receiptNumber: string) => {
     const res = await api.get(`/receipts/${receiptNumber}`);
     return res.data;
 };
+
+export const getReceiptsByCashierAndPeriod = async (
+    cashierId: string,
+    from: string,
+    to: string
+) => {
+    const res = await api.get(
+        `/receipts?cashier_id=${encodeURIComponent(
+            cashierId
+        )}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    return res.data;
+};
+
+export const getAllReceiptsByPeriod = async (from: string, to: string) => {
+    const res = await api.get(
+        `/receipts/all?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    return res.data;
+};

@@ -1,8 +1,14 @@
-import { useState } from "react";
-import { createReceipt, getMyReceipts, getReceiptByNumber } from "../api/receiptsApi";
+import { useEffect, useState } from "react";
+import {
+    createReceipt,
+    getAllReceiptsByPeriod,
+    getMyReceipts,
+    getReceiptByNumber,
+    getReceiptsByCashierAndPeriod,
+} from "../api/receiptsApi";
 import { getStoreProducts } from "../api/storeProductsApi";
 import { getCustomerCards } from "../api/customerCardsApi";
-import { useEffect } from "react";
+import { getEmployees } from "../api/employeesApi";
 import { useAuth } from "../context/AuthContext";
 
 type ReceiptItemInput = {
@@ -56,28 +62,76 @@ type CustomerCard = {
     percent: number;
 };
 
+type Employee = {
+    id: string;
+    surname: string;
+    name: string;
+    patronymic: string | null;
+    position?: string;
+    role?: string;
+};
+
 export const ReceiptsPage = () => {
+    const { user } = useAuth();
+    const isCashier = user?.role === "Cashier";
+    const isManager = user?.role === "Manager";
+
     const [cardNumber, setCardNumber] = useState("");
     const [items, setItems] = useState<ReceiptItemInput[]>([
         { upc: "", product_number: 1 },
     ]);
-    const { user } = useAuth();
-    const isCashier = user?.role === "Cashier";
 
     const [from, setFrom] = useState("2026-04-01 00:00:00");
     const [to, setTo] = useState("2026-04-30 23:59:59");
 
     const [receiptNumber, setReceiptNumber] = useState("");
 
+    const [managerCashierId, setManagerCashierId] = useState("");
+    const [managerFrom, setManagerFrom] = useState("2026-04-01 00:00:00");
+    const [managerTo, setManagerTo] = useState("2026-04-30 23:59:59");
+
+    const [allFrom, setAllFrom] = useState("2026-04-01 00:00:00");
+    const [allTo, setAllTo] = useState("2026-04-30 23:59:59");
+
     const [createdReceipt, setCreatedReceipt] = useState<Receipt | null>(null);
     const [myReceipts, setMyReceipts] = useState<Receipt[]>([]);
+    const [managerReceipts, setManagerReceipts] = useState<Receipt[]>([]);
+    const [allReceipts, setAllReceipts] = useState<Receipt[]>([]);
     const [receiptDetails, setReceiptDetails] = useState<ReceiptFull | null>(null);
-    const [error, setError] = useState("");
 
     const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
     const [customerCards, setCustomerCards] = useState<CustomerCard[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
 
-    const handleItemChange = (index: number, field: keyof ReceiptItemInput, value: string | number) => {
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        const loadOptions = async () => {
+            try {
+                setError("");
+                const [storeProductsData, customerCardsData, employeesData] =
+                    await Promise.all([
+                        getStoreProducts(),
+                        getCustomerCards(),
+                        getEmployees(),
+                    ]);
+
+                setStoreProducts(Array.isArray(storeProductsData) ? storeProductsData : []);
+                setCustomerCards(Array.isArray(customerCardsData) ? customerCardsData : []);
+                setEmployees(Array.isArray(employeesData) ? employeesData : []);
+            } catch (err: any) {
+                setError(err?.response?.data?.error || "Failed to load form options");
+            }
+        };
+
+        loadOptions();
+    }, []);
+
+    const handleItemChange = (
+        index: number,
+        field: keyof ReceiptItemInput,
+        value: string | number
+    ) => {
         const updated = [...items];
         updated[index] = {
             ...updated[index],
@@ -95,24 +149,6 @@ export const ReceiptsPage = () => {
         setItems(items.filter((_, i) => i !== index));
     };
 
-    useEffect(() => {
-        const loadOptions = async () => {
-            try {
-                const [storeProductsData, customerCardsData] = await Promise.all([
-                    getStoreProducts(),
-                    getCustomerCards(),
-                ]);
-
-                setStoreProducts(Array.isArray(storeProductsData) ? storeProductsData : []);
-                setCustomerCards(Array.isArray(customerCardsData) ? customerCardsData : []);
-            } catch (err: any) {
-                setError(err?.response?.data?.error || "Failed to load form options");
-            }
-        };
-
-        loadOptions();
-    }, []);
-
     const handleCreateReceipt = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -127,9 +163,9 @@ export const ReceiptsPage = () => {
                 return;
             }
         }
+
         const upcs = items.map((item) => item.upc.trim());
         const uniqueUpcs = new Set(upcs);
-
         if (uniqueUpcs.size !== upcs.length) {
             setError("The same UPC cannot be added twice");
             return;
@@ -176,6 +212,48 @@ export const ReceiptsPage = () => {
         }
     };
 
+    const handleGetReceiptsByCashier = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!managerCashierId.trim() || !managerFrom.trim() || !managerTo.trim()) {
+            setError("Cashier, from, and to are required");
+            return;
+        }
+
+        try {
+            setError("");
+            const data = await getReceiptsByCashierAndPeriod(
+                managerCashierId.trim(),
+                managerFrom.trim(),
+                managerTo.trim()
+            );
+            setManagerReceipts(Array.isArray(data) ? data : []);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Failed to load cashier receipts");
+        }
+    };
+
+    const handleGetAllReceipts = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!allFrom.trim() || !allTo.trim()) {
+            setError("From and to are required");
+            return;
+        }
+
+        try {
+            setError("");
+            const data = await getAllReceiptsByPeriod(allFrom.trim(), allTo.trim());
+            setAllReceipts(Array.isArray(data) ? data : []);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Failed to load all receipts");
+        }
+    };
+
+    const cashiers = employees.filter(
+        (e) => e.role === "Cashier" || e.position === "Cashier"
+    );
+
     return (
         <div>
             <h1>Receipts</h1>
@@ -186,64 +264,71 @@ export const ReceiptsPage = () => {
                 <section style={{ marginBottom: 32 }}>
                     <h2>Create Receipt</h2>
 
-                <form onSubmit={handleCreateReceipt}>
-                    <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
-                        <select
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                        >
-                            <option value="">No card</option>
-                            {customerCards.map((card) => (
-                                <option key={card.card_number} value={card.card_number}>
-                                    {card.card_number} - {card.surname} {card.name}
-                                </option>
+                    <form onSubmit={handleCreateReceipt}>
+                        <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
+                            <select
+                                value={cardNumber}
+                                onChange={(e) => setCardNumber(e.target.value)}
+                            >
+                                <option value="">No card</option>
+                                {customerCards.map((card) => (
+                                    <option key={card.card_number} value={card.card_number}>
+                                        {card.card_number} - {card.surname} {card.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {items.map((item, index) => (
+                                <div key={index} style={{ display: "flex", gap: 8 }}>
+                                    <select
+                                        value={item.upc}
+                                        onChange={(e) =>
+                                            handleItemChange(index, "upc", e.target.value)
+                                        }
+                                    >
+                                        <option value="">Select UPC</option>
+                                        {storeProducts.map((sp) => (
+                                            <option key={sp.upc} value={sp.upc}>
+                                                {sp.upc} ({sp.promotional_product ? "Promo" : "Regular"}) - price:{" "}
+                                                {sp.selling_price} - qty: {sp.products_number}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <input
+                                        type="number"
+                                        placeholder="Product number"
+                                        value={item.product_number}
+                                        onChange={(e) =>
+                                            handleItemChange(index, "product_number", e.target.value)
+                                        }
+                                    />
+
+                                    <button type="button" onClick={() => removeItemRow(index)}>
+                                        Remove
+                                    </button>
+                                </div>
                             ))}
-                        </select>
 
-                        {items.map((item, index) => (
-                            <div key={index} style={{ display: "flex", gap: 8 }}>
-                                <select
-                                    value={item.upc}
-                                    onChange={(e) => handleItemChange(index, "upc", e.target.value)}
-                                >
-                                    <option value="">Select UPC</option>
-                                    {storeProducts.map((sp) => (
-                                        <option key={sp.upc} value={sp.upc}>
-                                            {sp.upc} ({sp.promotional_product ? "Promo" : "Regular"}) - price: {sp.selling_price} - qty: {sp.products_number}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input
-                                    type="number"
-                                    placeholder="Product number"
-                                    value={item.product_number}
-                                    onChange={(e) => handleItemChange(index, "product_number", e.target.value)}
-                                />
-                                <button type="button" onClick={() => removeItemRow(index)}>
-                                    Remove
-                                </button>
-                            </div>
-                        ))}
+                            <button type="button" onClick={addItemRow}>
+                                Add Item
+                            </button>
 
-                        <button type="button" onClick={addItemRow}>
-                            Add Item
-                        </button>
+                            <button type="submit">Create Receipt</button>
+                        </div>
+                    </form>
 
-                        <button type="submit">Create Receipt</button>
-                    </div>
-                </form>
-
-                {createdReceipt && (
-                    <div style={{ marginTop: 16 }}>
-                        <h3>Created Receipt</h3>
-                        <p>Receipt Number: {createdReceipt.receipt_number}</p>
-                        <p>Cashier ID: {createdReceipt.cashier_id}</p>
-                        <p>Card Number: {createdReceipt.card_number ?? "-"}</p>
-                        <p>Print Date: {createdReceipt.print_date}</p>
-                        <p>Sum Total: {createdReceipt.sum_total}</p>
-                        <p>VAT: {createdReceipt.vat}</p>
-                    </div>
-                )}
+                    {createdReceipt && (
+                        <div style={{ marginTop: 16 }}>
+                            <h3>Created Receipt</h3>
+                            <p>Receipt Number: {createdReceipt.receipt_number}</p>
+                            <p>Cashier ID: {createdReceipt.cashier_id}</p>
+                            <p>Card Number: {createdReceipt.card_number ?? "-"}</p>
+                            <p>Print Date: {createdReceipt.print_date}</p>
+                            <p>Sum Total: {createdReceipt.sum_total}</p>
+                            <p>VAT: {createdReceipt.vat}</p>
+                        </div>
+                    )}
                 </section>
             )}
 
@@ -251,55 +336,181 @@ export const ReceiptsPage = () => {
                 <section style={{ marginBottom: 32 }}>
                     <h2>My Receipts</h2>
 
-                <form onSubmit={handleGetMyReceipts} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <input
-                        placeholder="From"
-                        value={from}
-                        onChange={(e) => setFrom(e.target.value)}
-                    />
-                    <input
-                        placeholder="To"
-                        value={to}
-                        onChange={(e) => setTo(e.target.value)}
-                    />
-                    <button type="submit">Load My Receipts</button>
-                </form>
+                    <form
+                        onSubmit={handleGetMyReceipts}
+                        style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                    >
+                        <input
+                            placeholder="From"
+                            value={from}
+                            onChange={(e) => setFrom(e.target.value)}
+                        />
+                        <input
+                            placeholder="To"
+                            value={to}
+                            onChange={(e) => setTo(e.target.value)}
+                        />
+                        <button type="submit">Load My Receipts</button>
+                    </form>
 
-                {myReceipts.length === 0 ? (
-                    <p>No receipts found</p>
-                ) : (
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>Receipt Number</th>
-                            <th>Cashier ID</th>
-                            <th>Card Number</th>
-                            <th>Print Date</th>
-                            <th>Sum Total</th>
-                            <th>VAT</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {myReceipts.map((receipt) => (
-                            <tr key={receipt.receipt_number}>
-                                <td>{receipt.receipt_number}</td>
-                                <td>{receipt.cashier_id}</td>
-                                <td>{receipt.card_number ?? "-"}</td>
-                                <td>{receipt.print_date}</td>
-                                <td>{receipt.sum_total}</td>
-                                <td>{receipt.vat}</td>
+                    {myReceipts.length === 0 ? (
+                        <p>No receipts found</p>
+                    ) : (
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Receipt Number</th>
+                                <th>Cashier ID</th>
+                                <th>Card Number</th>
+                                <th>Print Date</th>
+                                <th>Sum Total</th>
+                                <th>VAT</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                )}
+                            </thead>
+                            <tbody>
+                            {myReceipts.map((receipt) => (
+                                <tr key={receipt.receipt_number}>
+                                    <td>{receipt.receipt_number}</td>
+                                    <td>{receipt.cashier_id}</td>
+                                    <td>{receipt.card_number ?? "-"}</td>
+                                    <td>{receipt.print_date}</td>
+                                    <td>{receipt.sum_total}</td>
+                                    <td>{receipt.vat}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
+                </section>
+            )}
+
+            {isManager && (
+                <section style={{ marginBottom: 32 }}>
+                    <h2>Receipts by Cashier</h2>
+
+                    <form
+                        onSubmit={handleGetReceiptsByCashier}
+                        style={{ display: "grid", gap: 8, maxWidth: 500 }}
+                    >
+                        <select
+                            value={managerCashierId}
+                            onChange={(e) => setManagerCashierId(e.target.value)}
+                        >
+                            <option value="">Select cashier</option>
+                            {cashiers.map((cashier) => (
+                                <option key={cashier.id} value={cashier.id}>
+                                    {cashier.id} — {cashier.surname} {cashier.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        <input
+                            placeholder="From"
+                            value={managerFrom}
+                            onChange={(e) => setManagerFrom(e.target.value)}
+                        />
+
+                        <input
+                            placeholder="To"
+                            value={managerTo}
+                            onChange={(e) => setManagerTo(e.target.value)}
+                        />
+
+                        <button type="submit">Load Receipts</button>
+                    </form>
+
+                    {managerReceipts.length === 0 ? (
+                        <p>No receipts found</p>
+                    ) : (
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Receipt Number</th>
+                                <th>Cashier ID</th>
+                                <th>Card Number</th>
+                                <th>Print Date</th>
+                                <th>Sum Total</th>
+                                <th>VAT</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {managerReceipts.map((receipt) => (
+                                <tr key={receipt.receipt_number}>
+                                    <td>{receipt.receipt_number}</td>
+                                    <td>{receipt.cashier_id}</td>
+                                    <td>{receipt.card_number ?? "-"}</td>
+                                    <td>{receipt.print_date}</td>
+                                    <td>{receipt.sum_total}</td>
+                                    <td>{receipt.vat}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
+                </section>
+            )}
+
+            {isManager && (
+                <section style={{ marginBottom: 32 }}>
+                    <h2>All Receipts for Period</h2>
+
+                    <form
+                        onSubmit={handleGetAllReceipts}
+                        style={{ display: "grid", gap: 8, maxWidth: 500 }}
+                    >
+                        <input
+                            placeholder="From"
+                            value={allFrom}
+                            onChange={(e) => setAllFrom(e.target.value)}
+                        />
+
+                        <input
+                            placeholder="To"
+                            value={allTo}
+                            onChange={(e) => setAllTo(e.target.value)}
+                        />
+
+                        <button type="submit">Load All Receipts</button>
+                    </form>
+
+                    {allReceipts.length === 0 ? (
+                        <p>No receipts found</p>
+                    ) : (
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Receipt Number</th>
+                                <th>Cashier ID</th>
+                                <th>Card Number</th>
+                                <th>Print Date</th>
+                                <th>Sum Total</th>
+                                <th>VAT</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {allReceipts.map((receipt) => (
+                                <tr key={receipt.receipt_number}>
+                                    <td>{receipt.receipt_number}</td>
+                                    <td>{receipt.cashier_id}</td>
+                                    <td>{receipt.card_number ?? "-"}</td>
+                                    <td>{receipt.print_date}</td>
+                                    <td>{receipt.sum_total}</td>
+                                    <td>{receipt.vat}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
                 </section>
             )}
 
             <section>
                 <h2>Receipt Details</h2>
 
-                <form onSubmit={handleGetReceiptByNumber} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <form
+                    onSubmit={handleGetReceiptByNumber}
+                    style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                >
                     <input
                         placeholder="Receipt number"
                         value={receiptNumber}
