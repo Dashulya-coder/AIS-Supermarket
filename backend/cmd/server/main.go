@@ -132,9 +132,14 @@ func main() {
 		sharedGroup.POST("/customer-cards", customerCardHandler.CreateCustomerCard)
 		sharedGroup.PUT("/customer-cards/:card_number", customerCardHandler.UpdateCustomerCard)
 
-		sharedGroup.POST("/receipts", receiptHandler.CreateReceipt)
 		sharedGroup.GET("/receipts/:receipt_number", receiptHandler.GetReceiptByNumber)
-		sharedGroup.GET("/receipts/my", receiptHandler.GetMyReceipts)
+	}
+
+	cashierGroup := r.Group("/")
+	cashierGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireRole("Cashier"))
+	{
+		cashierGroup.POST("/receipts", receiptHandler.CreateReceipt)
+		cashierGroup.GET("/receipts/my", receiptHandler.GetMyReceipts)
 	}
 
 	port := cfg.AppPort
