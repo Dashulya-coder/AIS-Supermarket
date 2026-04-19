@@ -43,6 +43,10 @@ export const EmployeesPage = () => {
     const [street, setStreet] = useState("");
     const [zipCode, setZipCode] = useState("");
 
+    const isValidNameField = (value: string) => {
+        return /^[A-Za-zА-Яа-яІіЇїЄєҐґ' -]+$/.test(value);
+    };
+
     const loadEmployees = async () => {
         try {
             setError("");
@@ -75,6 +79,31 @@ export const EmployeesPage = () => {
             !zipCode.trim()
         ) {
             setError("All required fields must be filled");
+            return;
+        }
+
+        if (!isValidNameField(surname.trim())) {
+            setError("Surname must contain only letters");
+            return;
+        }
+
+        if (!isValidNameField(name.trim())) {
+            setError("Name must contain only letters");
+            return;
+        }
+
+        if (patronymic.trim() && !isValidNameField(patronymic.trim())) {
+            setError("Patronymic must contain only letters");
+            return;
+        }
+
+        if (phone.trim().length > 13) {
+            setError("Phone must not be longer than 13 characters");
+            return;
+        }
+
+        if (Number(salary) < 0) {
+            setError("Salary cannot be negative");
             return;
         }
 
@@ -145,9 +174,24 @@ export const EmployeesPage = () => {
 
             <form onSubmit={handleCreate} style={{ marginBottom: 24 }}>
                 <div style={{ display: "grid", gap: 8, maxWidth: 700 }}>
-                    <input placeholder="ID" value={id} onChange={(e) => setId(e.target.value)} />
-                    <input placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} />
-                    <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <input
+                        placeholder="ID"
+                        value={id}
+                        onChange={(e) => setId(e.target.value)}
+                    />
+
+                    <input
+                        placeholder="Surname"
+                        value={surname}
+                        onChange={(e) => setSurname(e.target.value)}
+                    />
+
+                    <input
+                        placeholder="Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+
                     <input
                         placeholder="Patronymic"
                         value={patronymic}
@@ -178,10 +222,29 @@ export const EmployeesPage = () => {
                         onChange={(e) => setDateOfStart(e.target.value)}
                     />
 
-                    <input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    <input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-                    <input placeholder="Street" value={street} onChange={(e) => setStreet(e.target.value)} />
-                    <input placeholder="Zip code" value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
+                    <input
+                        placeholder="Phone"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                    />
+
+                    <input
+                        placeholder="City"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                    />
+
+                    <input
+                        placeholder="Street"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                    />
+
+                    <input
+                        placeholder="Zip code"
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                    />
 
                     <button type="submit">Create Employee</button>
                 </div>
@@ -192,30 +255,56 @@ export const EmployeesPage = () => {
             {employees.length === 0 ? (
                 <p>No employees found</p>
             ) : (
-                <table>
+                <table
+                    style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                    }}
+                >
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Surname</th>
-                        <th>Name</th>
-                        <th>Position</th>
-                        <th>Salary</th>
-                        <th>Phone</th>
-                        <th>City</th>
-                        <th>Actions</th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            ID
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Surname
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Name
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Position
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Salary
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Phone
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            City
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Date of Start
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>
+                            Actions
+                        </th>
                     </tr>
                     </thead>
+
                     <tbody>
                     {employees.map((employee) => (
                         <tr key={employee.id}>
-                            <td>{employee.id}</td>
-                            <td>{employee.surname}</td>
-                            <td>{employee.name}</td>
-                            <td>{employee.position}</td>
-                            <td>{employee.salary}</td>
-                            <td>{employee.phone}</td>
-                            <td>{employee.city}</td>
-                            <td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.id}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.surname}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.name}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.position}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.salary}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.phone}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.city}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>{employee.date_of_start}</td>
+                            <td style={{ border: "1px solid #ddd", padding: 10 }}>
                                 <button onClick={() => handleDelete(employee.id)}>Delete</button>
                             </td>
                         </tr>
