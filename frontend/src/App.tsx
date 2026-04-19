@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { Layout } from "./components/Layout";
+import { ProductsPage } from "./pages/ProductsPage";
 
 function App() {
     return (
@@ -18,6 +19,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <CategoriesPage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/products"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <ProductsPage />
                                 </Layout>
                             </ProtectedRoute>
                         }
