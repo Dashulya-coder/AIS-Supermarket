@@ -41,6 +41,12 @@ export const Navbar = () => {
                 </Link>
             )}
 
+            {isManager && (
+                <Link to="/employees" style={{ color: "white" }}>
+                    Employees
+                </Link>
+            )}
+
             <div style={{ marginLeft: "auto" }}>
                 {user?.username} ({user?.role})
             </div>

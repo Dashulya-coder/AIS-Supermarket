@@ -9,6 +9,7 @@ import { StoreProductsPage } from "./pages/StoreProductsPage";
 import { CustomerCardsPage } from "./pages/CustomerCardsPage";
 import { ReceiptsPage } from "./pages/ReceiptsPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { EmployeesPage } from "./pages/EmployeesPage";
 
 function App() {
     return (
@@ -77,6 +78,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <ReportsPage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/employees"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <EmployeesPage />
                                 </Layout>
                             </ProtectedRoute>
                         }

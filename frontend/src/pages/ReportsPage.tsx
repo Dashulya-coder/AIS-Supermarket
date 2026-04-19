@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     getProductQuantity,
     getSalesByCashier,
     getSalesTotal,
 } from "../api/reportsApi";
 import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
 import { getStoreProducts } from "../api/storeProductsApi";
 import { getEmployees } from "../api/employeesApi";
 
@@ -29,6 +28,23 @@ type ProductQuantityResult = {
     total_quantity: number;
 };
 
+type StoreProduct = {
+    upc: string;
+    upc_prom: string | null;
+    product_id: number;
+    selling_price: number;
+    products_number: number;
+    promotional_product: boolean;
+};
+
+type Employee = {
+    id: string;
+    surname: string;
+    name: string;
+    role?: string;
+    position?: string;
+};
+
 export const ReportsPage = () => {
     const { user } = useAuth();
     const isManager = user?.role === "Manager";
@@ -50,15 +66,16 @@ export const ReportsPage = () => {
     const [productQuantityResult, setProductQuantityResult] =
         useState<ProductQuantityResult | null>(null);
 
-    const [storeProducts, setStoreProducts] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
+    const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
 
     const [error, setError] = useState("");
-
 
     useEffect(() => {
         const loadOptions = async () => {
             try {
+                setError("");
+
                 const [sp, emp] = await Promise.all([
                     getStoreProducts(),
                     getEmployees(),
@@ -91,7 +108,9 @@ export const ReportsPage = () => {
             );
             setSalesByCashierResult(data);
         } catch (err: any) {
-            setError(err?.response?.data?.error || "Failed to load cashier sales report");
+            setError(
+                err?.response?.data?.error || "Failed to load cashier sales report"
+            );
         }
     };
 
@@ -108,7 +127,9 @@ export const ReportsPage = () => {
             const data = await getSalesTotal(totalFrom.trim(), totalTo.trim());
             setSalesTotalResult(data);
         } catch (err: any) {
-            setError(err?.response?.data?.error || "Failed to load total sales report");
+            setError(
+                err?.response?.data?.error || "Failed to load total sales report"
+            );
         }
     };
 
@@ -129,9 +150,15 @@ export const ReportsPage = () => {
             );
             setProductQuantityResult(data);
         } catch (err: any) {
-            setError(err?.response?.data?.error || "Failed to load product quantity report");
+            setError(
+                err?.response?.data?.error || "Failed to load product quantity report"
+            );
         }
     };
+
+    const cashiers = employees.filter(
+        (e) => e.role === "Cashier" || e.position === "Cashier"
+    );
 
     if (!isManager) {
         return <p>Access denied</p>;
@@ -146,30 +173,34 @@ export const ReportsPage = () => {
             <section style={{ marginBottom: 32 }}>
                 <h2>Sales by Cashier</h2>
 
-                <form onSubmit={handleSalesByCashier} style={{ display: "grid", gap: 8, maxWidth: 500 }}>
+                <form
+                    onSubmit={handleSalesByCashier}
+                    style={{ display: "grid", gap: 8, maxWidth: 500 }}
+                >
                     <select
                         value={cashierId}
                         onChange={(e) => setCashierId(e.target.value)}
                     >
                         <option value="">Select cashier</option>
-                        {employees
-                            .filter((e) => e.role === "Cashier")
-                            .map((e) => (
-                                <option key={e.id} value={e.id}>
-                                    {e.id} — {e.surname} {e.name}
-                                </option>
-                            ))}
+                        {cashiers.map((e) => (
+                            <option key={e.id} value={e.id}>
+                                {e.id} — {e.surname} {e.name}
+                            </option>
+                        ))}
                     </select>
+
                     <input
                         placeholder="From"
                         value={cashierFrom}
                         onChange={(e) => setCashierFrom(e.target.value)}
                     />
+
                     <input
                         placeholder="To"
                         value={cashierTo}
                         onChange={(e) => setCashierTo(e.target.value)}
                     />
+
                     <button type="submit">Get Report</button>
                 </form>
 
@@ -186,17 +217,22 @@ export const ReportsPage = () => {
             <section style={{ marginBottom: 32 }}>
                 <h2>Total Sales for Period</h2>
 
-                <form onSubmit={handleSalesTotal} style={{ display: "grid", gap: 8, maxWidth: 500 }}>
+                <form
+                    onSubmit={handleSalesTotal}
+                    style={{ display: "grid", gap: 8, maxWidth: 500 }}
+                >
                     <input
                         placeholder="From"
                         value={totalFrom}
                         onChange={(e) => setTotalFrom(e.target.value)}
                     />
+
                     <input
                         placeholder="To"
                         value={totalTo}
                         onChange={(e) => setTotalTo(e.target.value)}
                     />
+
                     <button type="submit">Get Report</button>
                 </form>
 
@@ -212,28 +248,32 @@ export const ReportsPage = () => {
             <section>
                 <h2>Product Quantity Sold</h2>
 
-                <form onSubmit={handleProductQuantity} style={{ display: "grid", gap: 8, maxWidth: 500 }}>
-                    <select
-                        value={upc}
-                        onChange={(e) => setUpc(e.target.value)}
-                    >
+                <form
+                    onSubmit={handleProductQuantity}
+                    style={{ display: "grid", gap: 8, maxWidth: 500 }}
+                >
+                    <select value={upc} onChange={(e) => setUpc(e.target.value)}>
                         <option value="">Select UPC</option>
                         {storeProducts.map((sp) => (
                             <option key={sp.upc} value={sp.upc}>
-                                {sp.upc} — price: {sp.selling_price} — qty: {sp.products_number}
+                                {sp.upc} ({sp.promotional_product ? "Promo" : "Regular"}) —{" "}
+                                {sp.selling_price}$
                             </option>
                         ))}
                     </select>
+
                     <input
                         placeholder="From"
                         value={productFrom}
                         onChange={(e) => setProductFrom(e.target.value)}
                     />
+
                     <input
                         placeholder="To"
                         value={productTo}
                         onChange={(e) => setProductTo(e.target.value)}
                     />
+
                     <button type="submit">Get Report</button>
                 </form>
 
