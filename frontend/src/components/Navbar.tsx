@@ -30,6 +30,10 @@ export const Navbar = () => {
                 Store Products
             </Link>
 
+            <Link to="/customer-cards" style={{ color: "white" }}>
+                Customer Cards
+            </Link>
+
             <div style={{ marginLeft: "auto" }}>
                 {user?.username} ({user?.role})
             </div>
