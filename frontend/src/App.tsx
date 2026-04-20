@@ -10,6 +10,7 @@ import { CustomerCardsPage } from "./pages/CustomerCardsPage";
 import { ReceiptsPage } from "./pages/ReceiptsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 function App() {
     return (
@@ -89,6 +90,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <EmployeesPage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <ProfilePage />
                                 </Layout>
                             </ProtectedRoute>
                         }

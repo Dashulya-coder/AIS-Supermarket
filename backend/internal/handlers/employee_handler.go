@@ -96,3 +96,17 @@ func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "employee deleted successfully"})
 }
+
+func (h *EmployeeHandler) GetMe(c *gin.Context) {
+    employeeID := c.GetString("employee_id")
+    employee, err := h.service.GetByID(employeeID)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+            return
+        }
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, employee)
+}

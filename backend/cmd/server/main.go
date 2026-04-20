@@ -83,6 +83,7 @@ func main() {
 				"role":        c.GetString("role"),
 			})
 		})
+		authGroup.GET("/employees/me", employeeHandler.GetMe)
 	}
 
 	// routes for Manager only
