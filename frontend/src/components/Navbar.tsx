@@ -33,6 +33,11 @@ export const Navbar = () => {
             {isManager && <NavLink to="/employees" className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ""}`}>
                 Employees
             </NavLink>}
+            {!isManager && (
+                <NavLink to="/profile" className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ""}`}>
+                    Profile
+                </NavLink>
+            )}
 
             <div className={styles.spacer} />
 

@@ -70,38 +70,99 @@ const formatBackendDateTime = (value: string) => {
     return `${day}/${month}/${year}, ${timePart}`;
 };
 
-const ReceiptTable = ({ receipts }: { receipts: Receipt[] }) => (
-    <div className={styles.tableWrap} style={{ marginTop: 16 }}>
-        <table className={styles.table}>
-            <thead>
-            <tr>
-                <th>Receipt #</th>
-                <th>Cashier ID</th>
-                <th>Card</th>
-                <th>Date</th>
-                <th>Total</th>
-                <th>VAT</th>
-            </tr>
-            </thead>
-            <tbody>
-            {receipts.map((r) => (
-                <tr key={r.receipt_number}>
-                    <td>
-                        <code style={{ fontSize: 13 }}>{r.receipt_number}</code>
-                    </td>
-                    <td>{r.cashier_id}</td>
-                    <td>{r.card_number ?? "—"}</td>
-                    <td>{formatBackendDateTime(r.print_date)}</td>
-                    <td>
-                        <strong>{Number(r.sum_total).toFixed(2)} ₴</strong>
-                    </td>
-                    <td>{Number(r.vat).toFixed(2)} ₴</td>
-                </tr>
-            ))}
-            </tbody>
-        </table>
-    </div>
-);
+const ReceiptTable = ({ receipts }: { receipts: Receipt[] }) => {
+    const [expandedReceipt, setExpandedReceipt] = useState<string | null>(null);
+    const [receiptDetails, setReceiptDetails] = useState<Record<string, ReceiptFull>>({});
+    const [loadingReceipt, setLoadingReceipt] = useState<string | null>(null);
+
+    const handleExpand = async (receiptNumber: string) => {
+        if (expandedReceipt === receiptNumber) {
+            setExpandedReceipt(null);
+            return;
+        }
+        setExpandedReceipt(receiptNumber);
+        if (receiptDetails[receiptNumber]) return;
+        try {
+            setLoadingReceipt(receiptNumber);
+            const data = await getReceiptByNumber(receiptNumber);
+            setReceiptDetails((prev) => ({ ...prev, [receiptNumber]: data }));
+        } catch {
+            // ignore
+        } finally {
+            setLoadingReceipt(null);
+        }
+    };
+
+    return (
+        <div className={styles.tableWrap} style={{ marginTop: 16 }}>
+            <table className={styles.table}>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Receipt #</th>
+                        <th>Cashier ID</th>
+                        <th>Card</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>VAT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {receipts.map((r) => (
+                        <>
+                            <tr key={r.receipt_number}>
+                                <td>
+                                    <button
+                                        className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm}`}
+                                        onClick={() => handleExpand(r.receipt_number)}
+                                    >
+                                        {expandedReceipt === r.receipt_number ? "▲" : "▼"}
+                                    </button>
+                                </td>
+                                <td><code style={{ fontSize: 13 }}>{r.receipt_number}</code></td>
+                                <td>{r.cashier_id}</td>
+                                <td>{r.card_number ?? "—"}</td>
+                                <td>{formatBackendDateTime(r.print_date)}</td>
+                                <td><strong>{Number(r.sum_total).toFixed(2)} ₴</strong></td>
+                                <td>{Number(r.vat).toFixed(2)} ₴</td>
+                            </tr>
+                            {expandedReceipt === r.receipt_number && (
+                                <tr key={`${r.receipt_number}-details`}>
+                                    <td colSpan={7} style={{ padding: 0, background: "var(--bg-secondary)" }}>
+                                        {loadingReceipt === r.receipt_number ? (
+                                            <p style={{ padding: 12, color: "var(--text-muted)" }}>Loading...</p>
+                                        ) : receiptDetails[r.receipt_number] ? (
+                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                                                <thead>
+                                                    <tr style={{ background: "var(--bg-hover)" }}>
+                                                        <th style={{ padding: "8px 16px", textAlign: "left", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase" }}>UPC</th>
+                                                        <th style={{ padding: "8px 16px", textAlign: "left", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase" }}>Quantity</th>
+                                                        <th style={{ padding: "8px 16px", textAlign: "left", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase" }}>Price</th>
+                                                        <th style={{ padding: "8px 16px", textAlign: "left", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase" }}>Subtotal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {receiptDetails[r.receipt_number].items.map((item) => (
+                                                        <tr key={item.id} style={{ borderTop: "1px solid var(--border)" }}>
+                                                            <td style={{ padding: "8px 16px" }}><code>{item.upc}</code></td>
+                                                            <td style={{ padding: "8px 16px" }}>{item.product_number}</td>
+                                                            <td style={{ padding: "8px 16px" }}>{Number(item.selling_price).toFixed(2)} ₴</td>
+                                                            <td style={{ padding: "8px 16px" }}><strong>{(item.product_number * item.selling_price).toFixed(2)} ₴</strong></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        ) : null}
+                                    </td>
+                                </tr>
+                            )}
+                        </>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
 
 export const ReceiptsPage = () => {
     const { user } = useAuth();
@@ -135,15 +196,9 @@ export const ReceiptsPage = () => {
         const loadOptions = async () => {
             try {
                 setError("");
-
-                const [sp, cc] = await Promise.all([
-                    getStoreProducts(),
-                    getCustomerCards(),
-                ]);
-
+                const [sp, cc] = await Promise.all([getStoreProducts(), getCustomerCards()]);
                 setStoreProducts(Array.isArray(sp) ? sp : []);
                 setCustomerCards(Array.isArray(cc) ? cc : []);
-
                 if (isManager) {
                     const emp = await getEmployees();
                     setEmployees(Array.isArray(emp) ? emp : []);
@@ -152,7 +207,6 @@ export const ReceiptsPage = () => {
                 setError(err?.response?.data?.error || "Failed to load options");
             }
         };
-
         loadOptions();
     }, [isManager]);
 
@@ -236,11 +290,18 @@ export const ReceiptsPage = () => {
 
     return (
         <div className={styles.page}>
-            <h1 className={styles.pageTitle}>Receipts</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 className={styles.pageTitle}>Receipts</h1>
+                <button
+                    className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                    onClick={() => window.print()}
+                >
+                    🖨 Print
+                </button>
+            </div>
 
             {error && <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>{error}</div>}
 
-            {/* ── Create Receipt (Cashier) ── */}
             {isCashier && (
                 <div className={styles.card} style={{ marginTop: 24 }}>
                     <h2 className={styles.modalTitle}>Create Receipt</h2>
@@ -256,7 +317,6 @@ export const ReceiptsPage = () => {
                                 ))}
                             </select>
                         </div>
-
                         <label className={styles.label}>Items</label>
                         {items.map((item, index) => (
                             <div key={index} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
@@ -291,7 +351,6 @@ export const ReceiptsPage = () => {
                                 </button>
                             </div>
                         ))}
-
                         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                             <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setItems([...items, { upc: "", product_number: 1 }])}>
                                 + Add Item
@@ -301,19 +360,18 @@ export const ReceiptsPage = () => {
                             </button>
                         </div>
                     </form>
-
                     {createdReceipt && (
                         <div style={{ marginTop: 20, padding: 16, background: "var(--success-dim)", borderRadius: "var(--radius-md)", border: "1px solid var(--success)" }}>
                             <p style={{ color: "var(--success)", fontWeight: 600, marginBottom: 8 }}>✓ Receipt created successfully</p>
                             <p>Number: <strong>{createdReceipt.receipt_number}</strong></p>
                             <p>Total: <strong>{Number(createdReceipt.sum_total).toFixed(2)} ₴</strong></p>
                             <p>VAT: {Number(createdReceipt.vat).toFixed(2)} ₴</p>
-                            <p>Date: {formatBackendDateTime(createdReceipt.print_date)}</p>                        </div>
+                            <p>Date: {formatBackendDateTime(createdReceipt.print_date)}</p>
+                        </div>
                     )}
                 </div>
             )}
 
-            {/* ── My Receipts (Cashier) ── */}
             {isCashier && (
                 <div className={styles.card} style={{ marginTop: 24 }}>
                     <h2 className={styles.modalTitle}>My Receipts</h2>
@@ -329,13 +387,24 @@ export const ReceiptsPage = () => {
                         <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: "flex-end" }}>
                             Load
                         </button>
+                        <button
+                            type="button"
+                            className={`${styles.btn} ${styles.btnSecondary}`}
+                            style={{ alignSelf: "flex-end" }}
+                            onClick={() => {
+                                const today = new Date().toISOString().split("T")[0];
+                                setFrom(`${today} 00:00:00`);
+                                setTo(`${today} 23:59:59`);
+                            }}
+                        >
+                            Today
+                        </button>
                     </form>
                     {myReceipts.length > 0 && <ReceiptTable receipts={myReceipts} />}
                     {myReceipts.length === 0 && <p style={{ color: "var(--text-muted)", marginTop: 12 }}>No receipts found</p>}
                 </div>
             )}
 
-            {/* ── Receipts by Cashier (Manager) ── */}
             {isManager && (
                 <div className={styles.card} style={{ marginTop: 24 }}>
                     <h2 className={styles.modalTitle}>Receipts by Cashier</h2>
@@ -366,7 +435,6 @@ export const ReceiptsPage = () => {
                 </div>
             )}
 
-            {/* ── All Receipts (Manager) ── */}
             {isManager && (
                 <div className={styles.card} style={{ marginTop: 24 }}>
                     <h2 className={styles.modalTitle}>All Receipts for Period</h2>
@@ -388,7 +456,6 @@ export const ReceiptsPage = () => {
                 </div>
             )}
 
-            {/* ── Receipt Details ── */}
             <div className={styles.card} style={{ marginTop: 24 }}>
                 <h2 className={styles.modalTitle}>Receipt Details</h2>
                 <form onSubmit={handleGetReceiptByNumber} style={{ display: "flex", gap: 10 }}>
@@ -401,7 +468,6 @@ export const ReceiptsPage = () => {
                     />
                     <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Search</button>
                 </form>
-
                 {receiptDetails && (
                     <div style={{ marginTop: 16 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
@@ -419,7 +485,6 @@ export const ReceiptsPage = () => {
                                 </div>
                             ))}
                         </div>
-
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
                                 <thead>

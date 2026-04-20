@@ -73,6 +73,59 @@ input, select, textarea { font-family: var(--font); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 @media print {
-  .no-print { display: none !important; }
-  body { background: white; color: black; }
+    /* Приховати всі елементи керування */
+    .no-print,
+    nav,
+    button,
+    input,
+    select,
+    label {
+        display: none !important;
+    }
+
+    /* Загальні стилі */
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12px;
+    }
+
+    /* Таблиця на всю ширину */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 11px;
+    }
+
+    th, td {
+        border: 1px solid #ccc !important;
+        padding: 6px 8px !important;
+        color: black !important;
+        background: white !important;
+        white-space: normal !important;
+    }
+
+    th {
+        background: #f0f0f0 !important;
+        font-weight: bold !important;
+    }
+
+    /* Прибрати темний фон скрізь */
+    * {
+        background: white !important;
+        color: black !important;
+        border-color: #ccc !important;
+        box-shadow: none !important;
+    }
+
+    /* Картки звітів */
+    .card, [class*="card"] {
+        border: 1px solid #ccc !important;
+        margin-bottom: 16px !important;
+    }
+
+    /* Розрив сторінки між картками */
+    [class*="card"] {
+        page-break-inside: avoid;
+    }
 }

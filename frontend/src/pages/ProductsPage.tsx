@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProducts, createProduct, deleteProduct } from "../api/productsApi";
+import { getProducts, createProduct, updateProduct, deleteProduct } from "../api/productsApi";
 import { getCategories } from "../api/categoriesApi";
 import { useAuth } from "../context/AuthContext";
 import styles from "../components/common.module.css";
@@ -24,15 +24,24 @@ export const ProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
+    const [filterCategoryId, setFilterCategoryId] = useState<number | "">("");
+    const [sortByName, setSortByName] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
+    // Create form
     const [name, setName] = useState("");
     const [categoryId, setCategoryId] = useState<number | "">("");
     const [producer, setProducer] = useState("");
     const [characteristics, setCharacteristics] = useState("");
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    // Edit modal
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [editName, setEditName] = useState("");
+    const [editCategoryId, setEditCategoryId] = useState<number | "">("");
+    const [editProducer, setEditProducer] = useState("");
+    const [editCharacteristics, setEditCharacteristics] = useState("");
 
     const loadData = async () => {
         try {
@@ -50,9 +59,7 @@ export const ProductsPage = () => {
         }
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,14 +70,37 @@ export const ProductsPage = () => {
         try {
             setError("");
             await createProduct(name.trim(), Number(categoryId), producer.trim(), characteristics.trim());
-            setName("");
-            setCategoryId("");
-            setProducer("");
-            setCharacteristics("");
+            setName(""); setCategoryId(""); setProducer(""); setCharacteristics("");
             setShowForm(false);
             await loadData();
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to create product");
+        }
+    };
+
+    const handleEditStart = (p: Product) => {
+        setEditingProduct(p);
+        setEditName(p.name);
+        setEditCategoryId(p.category_id);
+        setEditProducer(p.producer);
+        setEditCharacteristics(p.characteristics);
+        setError("");
+    };
+
+    const handleEditSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProduct) return;
+        if (!editName.trim() || !editCategoryId || !editProducer.trim() || !editCharacteristics.trim()) {
+            setError("All fields are required");
+            return;
+        }
+        try {
+            setError("");
+            await updateProduct(editingProduct.id, editName.trim(), Number(editCategoryId), editProducer.trim(), editCharacteristics.trim());
+            setEditingProduct(null);
+            await loadData();
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Failed to update product");
         }
     };
 
@@ -84,18 +114,30 @@ export const ProductsPage = () => {
     };
 
     const getCategoryName = (id: number) =>
-        categories.find((c) => c.id === id)?.name || id;
+        categories.find((c) => c.id === id)?.name || String(id);
 
-    const filtered = products.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.producer.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = products
+    .filter((p) => {
+        const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+            p.producer.toLowerCase().includes(search.toLowerCase());
+        const matchCategory = !filterCategoryId || p.category_id === Number(filterCategoryId);
+        return matchSearch && matchCategory;
+    })
+    .sort((a, b) => sortByName ? a.name.localeCompare(b.name) : 0);
 
     return (
         <div className={styles.page}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1 className={styles.pageTitle}>Products</h1>
+            <button
+                className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                onClick={() => window.print()}
+            >
+                🖨 Print
+            </button>
+        </div>
 
-            <div className={styles.filterBar} style={{ marginTop: 16 }}>
+            <div className={`${styles.filterBar} no-print`} style={{ marginTop: 16 }}>
                 <input
                     className={styles.searchInput}
                     placeholder="Search by name or producer..."
@@ -103,6 +145,17 @@ export const ProductsPage = () => {
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ flex: 1 }}
                 />
+                <select
+                    className={styles.select}
+                    style={{ width: "auto" }}
+                    value={filterCategoryId}
+                    onChange={(e) => setFilterCategoryId(e.target.value ? Number(e.target.value) : "")}
+                >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
                 {isManager && (
                     <button
                         className={`${styles.btn} ${styles.btnPrimary}`}
@@ -120,73 +173,77 @@ export const ProductsPage = () => {
                         <div className={styles.formRow}>
                             <div className={styles.field}>
                                 <label className={styles.label}>Product name</label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="Product name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                />
+                                <input className={styles.input} placeholder="Product name" value={name} onChange={(e) => setName(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label className={styles.label}>Producer</label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="Producer"
-                                    value={producer}
-                                    onChange={(e) => setProducer(e.target.value)}
-                                />
+                                <input className={styles.input} placeholder="Producer" value={producer} onChange={(e) => setProducer(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label className={styles.label}>Characteristics</label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="Characteristics"
-                                    value={characteristics}
-                                    onChange={(e) => setCharacteristics(e.target.value)}
-                                />
+                                <input className={styles.input} placeholder="Characteristics" value={characteristics} onChange={(e) => setCharacteristics(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label className={styles.label}>Category</label>
-                                <select
-                                    className={styles.select}
-                                    value={categoryId}
-                                    onChange={(e) => setCategoryId(Number(e.target.value))}
-                                >
+                                <select className={styles.select} value={categoryId} onChange={(e) => setCategoryId(Number(e.target.value))}>
                                     <option value="">Select category</option>
-                                    {categories.map((c) => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
+                                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                         </div>
                         <div className={styles.modalFooter}>
-                            <button
-                                type="button"
-                                className={`${styles.btn} ${styles.btnSecondary}`}
-                                onClick={() => setShowForm(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
-                                Create
-                            </button>
+                            <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setShowForm(false)}>Cancel</button>
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Create</button>
                         </div>
                     </form>
                 </div>
             )}
 
-            {error && (
-                <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>
-                    {error}
+            {/* Edit Modal */}
+            {editingProduct && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal}>
+                        <h3 className={styles.modalTitle}>Edit Product</h3>
+                        <form onSubmit={handleEditSave}>
+                            <div className={styles.formRow}>
+                                <div className={styles.field}>
+                                    <label className={styles.label}>Product name</label>
+                                    <input className={styles.input} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                                </div>
+                                <div className={styles.field}>
+                                    <label className={styles.label}>Producer</label>
+                                    <input className={styles.input} value={editProducer} onChange={(e) => setEditProducer(e.target.value)} />
+                                </div>
+                                <div className={styles.field}>
+                                    <label className={styles.label}>Characteristics</label>
+                                    <input className={styles.input} value={editCharacteristics} onChange={(e) => setEditCharacteristics(e.target.value)} />
+                                </div>
+                                <div className={styles.field}>
+                                    <label className={styles.label}>Category</label>
+                                    <select className={styles.select} value={editCategoryId} onChange={(e) => setEditCategoryId(Number(e.target.value))}>
+                                        <option value="">Select category</option>
+                                        {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            {error && <div className={styles.errorMsg} style={{ marginTop: 12 }}>{error}</div>}
+                            <div className={styles.modalFooter}>
+                                <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setEditingProduct(null)}>Cancel</button>
+                                <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Save</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
+            )}
+
+            {error && !editingProduct && (
+                <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>{error}</div>
             )}
 
             {loading ? (
                 <div className={styles.loading}>Loading...</div>
             ) : filtered.length === 0 ? (
-                <div className={styles.empty}>
-                    <p>No products found</p>
-                </div>
+                <div className={styles.empty}><p>No products found</p></div>
             ) : (
                 <div className={styles.tableWrap} style={{ marginTop: 24 }}>
                     <table className={styles.table}>
@@ -205,21 +262,25 @@ export const ProductsPage = () => {
                                 <tr key={p.id}>
                                     <td>{p.id}</td>
                                     <td>{p.name}</td>
-                                    <td>
-                                        <span className={`${styles.badge} ${styles.badgeAccent}`}>
-                                            {getCategoryName(p.category_id)}
-                                        </span>
-                                    </td>
+                                    <td><span className={`${styles.badge} ${styles.badgeAccent}`}>{getCategoryName(p.category_id)}</span></td>
                                     <td>{p.producer}</td>
                                     <td>{p.characteristics}</td>
                                     {isManager && (
                                         <td style={{ textAlign: "right" }}>
-                                            <button
-                                                className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
-                                                onClick={() => handleDelete(p.id)}
-                                            >
-                                                Delete
-                                            </button>
+                                            <div className={styles.actions} style={{ justifyContent: "flex-end" }}>
+                                                <button
+                                                    className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm}`}
+                                                    onClick={() => handleEditStart(p)}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                                                    onClick={() => handleDelete(p.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     )}
                                 </tr>

@@ -183,6 +183,10 @@ export const ReportsPage = () => {
         (e) => e.role === "Cashier" || e.position === "Cashier"
     );
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     if (!isManager) {
         return (
             <div className={styles.page}>
@@ -195,8 +199,15 @@ export const ReportsPage = () => {
 
     return (
         <div className={styles.page}>
-            <h1 className={styles.pageTitle}>Reports</h1>
-
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 className={styles.pageTitle}>Reports</h1>
+                <button
+                    className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                    onClick={handlePrint}
+                >
+                    🖨 Print all reports
+                </button>
+            </div>
             {error && (
                 <div
                     className={styles.errorMsg}

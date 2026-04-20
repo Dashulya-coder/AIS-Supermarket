@@ -1,10 +1,7 @@
 import { api } from "./client";
 
 export const getStoreProducts = async (promotional?: string) => {
-    const url = promotional
-        ? `/store-products?promotional=${promotional}`
-        : "/store-products";
-
+    const url = promotional ? `/store-products?promotional=${promotional}` : "/store-products";
     const res = await api.get(url);
     return res.data;
 };
@@ -17,14 +14,19 @@ export const createStoreProduct = async (
     products_number: number,
     promotional_product: boolean
 ) => {
-    const res = await api.post("/store-products", {
-        upc,
-        upc_prom,
-        product_id,
-        selling_price,
-        products_number,
-        promotional_product,
-    });
+    const res = await api.post("/store-products", { upc, upc_prom, product_id, selling_price, products_number, promotional_product });
+    return res.data;
+};
+
+export const updateStoreProduct = async (
+    upc: string,
+    upc_prom: string | null,
+    product_id: number,
+    selling_price: number,
+    products_number: number,
+    promotional_product: boolean
+) => {
+    const res = await api.put(`/store-products/${upc}`, { upc_prom, product_id, selling_price, products_number, promotional_product });
     return res.data;
 };
 
