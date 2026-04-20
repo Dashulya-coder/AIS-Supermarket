@@ -63,30 +63,41 @@ type Employee = {
     role?: string;
 };
 
+const formatBackendDateTime = (value: string) => {
+    const normalized = value.replace("T", " ").slice(0, 19);
+    const [datePart, timePart] = normalized.split(" ");
+    const [year, month, day] = datePart.split("-");
+    return `${day}/${month}/${year}, ${timePart}`;
+};
+
 const ReceiptTable = ({ receipts }: { receipts: Receipt[] }) => (
     <div className={styles.tableWrap} style={{ marginTop: 16 }}>
         <table className={styles.table}>
             <thead>
-                <tr>
-                    <th>Receipt #</th>
-                    <th>Cashier ID</th>
-                    <th>Card</th>
-                    <th>Date</th>
-                    <th>Total</th>
-                    <th>VAT</th>
-                </tr>
+            <tr>
+                <th>Receipt #</th>
+                <th>Cashier ID</th>
+                <th>Card</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>VAT</th>
+            </tr>
             </thead>
             <tbody>
-                {receipts.map((r) => (
-                    <tr key={r.receipt_number}>
-                        <td><code style={{ fontSize: 13 }}>{r.receipt_number}</code></td>
-                        <td>{r.cashier_id}</td>
-                        <td>{r.card_number ?? "—"}</td>
-                        <td>{new Date(r.print_date).toLocaleString()}</td>
-                        <td><strong>{Number(r.sum_total).toFixed(2)} ₴</strong></td>
-                        <td>{Number(r.vat).toFixed(2)} ₴</td>
-                    </tr>
-                ))}
+            {receipts.map((r) => (
+                <tr key={r.receipt_number}>
+                    <td>
+                        <code style={{ fontSize: 13 }}>{r.receipt_number}</code>
+                    </td>
+                    <td>{r.cashier_id}</td>
+                    <td>{r.card_number ?? "—"}</td>
+                    <td>{formatBackendDateTime(r.print_date)}</td>
+                    <td>
+                        <strong>{Number(r.sum_total).toFixed(2)} ₴</strong>
+                    </td>
+                    <td>{Number(r.vat).toFixed(2)} ₴</td>
+                </tr>
+            ))}
             </tbody>
         </table>
     </div>
@@ -123,20 +134,27 @@ export const ReceiptsPage = () => {
     useEffect(() => {
         const loadOptions = async () => {
             try {
-                const [sp, cc, emp] = await Promise.all([
+                setError("");
+
+                const [sp, cc] = await Promise.all([
                     getStoreProducts(),
                     getCustomerCards(),
-                    getEmployees(),
                 ]);
+
                 setStoreProducts(Array.isArray(sp) ? sp : []);
                 setCustomerCards(Array.isArray(cc) ? cc : []);
-                setEmployees(Array.isArray(emp) ? emp : []);
+
+                if (isManager) {
+                    const emp = await getEmployees();
+                    setEmployees(Array.isArray(emp) ? emp : []);
+                }
             } catch (err: any) {
                 setError(err?.response?.data?.error || "Failed to load options");
             }
         };
+
         loadOptions();
-    }, []);
+    }, [isManager]);
 
     const handleItemChange = (index: number, field: keyof ReceiptItemInput, value: string | number) => {
         const updated = [...items];
@@ -290,8 +308,7 @@ export const ReceiptsPage = () => {
                             <p>Number: <strong>{createdReceipt.receipt_number}</strong></p>
                             <p>Total: <strong>{Number(createdReceipt.sum_total).toFixed(2)} ₴</strong></p>
                             <p>VAT: {Number(createdReceipt.vat).toFixed(2)} ₴</p>
-                            <p>Date: {new Date(createdReceipt.print_date).toLocaleString()}</p>
-                        </div>
+                            <p>Date: {formatBackendDateTime(createdReceipt.print_date)}</p>                        </div>
                     )}
                 </div>
             )}
@@ -392,7 +409,7 @@ export const ReceiptsPage = () => {
                                 { label: "Receipt #", value: receiptDetails.receipt_number },
                                 { label: "Cashier", value: receiptDetails.cashier_id },
                                 { label: "Card", value: receiptDetails.card_number ?? "—" },
-                                { label: "Date", value: new Date(receiptDetails.print_date).toLocaleString() },
+                                { label: "Date", value: formatBackendDateTime(receiptDetails.print_date) },
                                 { label: "Total", value: `${Number(receiptDetails.sum_total).toFixed(2)} ₴` },
                                 { label: "VAT", value: `${Number(receiptDetails.vat).toFixed(2)} ₴` },
                             ].map(({ label, value }) => (
