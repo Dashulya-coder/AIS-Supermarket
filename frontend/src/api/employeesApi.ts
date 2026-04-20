@@ -11,32 +11,27 @@ export const getCashiers = async () => {
 };
 
 export const createEmployee = async (
-    id: string,
-    surname: string,
-    name: string,
-    patronymic: string | null,
-    position: string,
-    salary: number,
-    date_of_birth: string,
-    date_of_start: string,
-    phone: string,
-    city: string,
-    street: string,
-    zip_code: string
+    id: string, surname: string, name: string,
+    patronymic: string | null, position: string, salary: number,
+    date_of_birth: string, date_of_start: string, phone: string,
+    city: string, street: string, zip_code: string
 ) => {
     const res = await api.post("/employees", {
-        id,
-        surname,
-        name,
-        patronymic,
-        position,
-        salary,
-        date_of_birth,
-        date_of_start,
-        phone,
-        city,
-        street,
-        zip_code,
+        id, surname, name, patronymic, position, salary,
+        date_of_birth, date_of_start, phone, city, street, zip_code,
+    });
+    return res.data;
+};
+
+export const updateEmployee = async (
+    id: string, surname: string, name: string,
+    patronymic: string | null, position: string, salary: number,
+    date_of_birth: string, date_of_start: string, phone: string,
+    city: string, street: string, zip_code: string
+) => {
+    const res = await api.put(`/employees/${id}`, {
+        surname, name, patronymic, position, salary,
+        date_of_birth, date_of_start, phone, city, street, zip_code,
     });
     return res.data;
 };
