@@ -24,6 +24,7 @@ export const EmployeesPage = () => {
 
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [showCashiersOnly, setShowCashiersOnly] = useState(false);
+    const [surnameSearch, setSurnameSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -75,6 +76,16 @@ export const EmployeesPage = () => {
     useEffect(() => {
         if (isManager) loadEmployees();
     }, [showCashiersOnly, isManager]);
+
+    // Фільтрація за прізвищем локально
+    const filteredEmployees = employees.filter((emp) =>
+        emp.surname.toLowerCase().includes(surnameSearch.toLowerCase())
+    );
+
+    // Знайдений працівник для показу деталей (п.11)
+    const foundEmployee = surnameSearch.trim() && filteredEmployees.length === 1
+        ? filteredEmployees[0]
+        : null;
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,14 +178,47 @@ export const EmployeesPage = () => {
             <h1 className={styles.pageTitle}>Employees</h1>
 
             <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                <input
+                    className={styles.searchInput}
+                    placeholder="Search by surname..."
+                    value={surnameSearch}
+                    onChange={(e) => setSurnameSearch(e.target.value)}
+                    style={{ flex: 1 }}
+                />
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                     <input type="checkbox" checked={showCashiersOnly} onChange={(e) => setShowCashiersOnly(e.target.checked)} />
-                    <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>Show cashiers only</span>
+                    <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>Cashiers only</span>
                 </label>
                 <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setShowForm((v) => !v)}>
                     {showForm ? "Cancel" : "+ Add Employee"}
                 </button>
             </div>
+
+            {/* Результат пошуку за прізвищем — телефон і адреса (п.11) */}
+            {foundEmployee && (
+                <div className={styles.card} style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Employee</p>
+                        <p style={{ fontWeight: 600 }}>{foundEmployee.surname} {foundEmployee.name} {foundEmployee.patronymic ?? ""}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Phone</p>
+                        <p style={{ fontWeight: 600 }}>{foundEmployee.phone}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>City</p>
+                        <p style={{ fontWeight: 600 }}>{foundEmployee.city}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Street</p>
+                        <p style={{ fontWeight: 600 }}>{foundEmployee.street}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Zip code</p>
+                        <p style={{ fontWeight: 600 }}>{foundEmployee.zip_code}</p>
+                    </div>
+                </div>
+            )}
 
             {showForm && (
                 <div className={styles.card} style={{ marginTop: 16 }}>
@@ -207,13 +251,12 @@ export const EmployeesPage = () => {
                 </div>
             )}
 
-            {/* Edit Modal */}
             {editingEmployee && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal} style={{ maxWidth: 640 }}>
                         <h3 className={styles.modalTitle}>Edit Employee — {editingEmployee.id}</h3>
                         <form onSubmit={handleEditSave}>
-                            <div className={styles.formRow}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                                 <div className={styles.field}><label className={styles.label}>Surname *</label><input className={styles.input} value={editSurname} onChange={(e) => setEditSurname(e.target.value)} /></div>
                                 <div className={styles.field}><label className={styles.label}>Name *</label><input className={styles.input} value={editName} onChange={(e) => setEditName(e.target.value)} /></div>
                                 <div className={styles.field}><label className={styles.label}>Patronymic</label><input className={styles.input} value={editPatronymic} onChange={(e) => setEditPatronymic(e.target.value)} /></div>
@@ -245,7 +288,7 @@ export const EmployeesPage = () => {
 
             {loading ? (
                 <div className={styles.loading}>Loading...</div>
-            ) : employees.length === 0 ? (
+            ) : filteredEmployees.length === 0 ? (
                 <div className={styles.empty}><p>No employees found</p></div>
             ) : (
                 <div className={styles.tableWrap} style={{ marginTop: 24 }}>
@@ -264,7 +307,7 @@ export const EmployeesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {employees.map((emp) => (
+                            {filteredEmployees.map((emp) => (
                                 <tr key={emp.id}>
                                     <td><code style={{ fontSize: 13 }}>{emp.id}</code></td>
                                     <td>{emp.surname}</td>
