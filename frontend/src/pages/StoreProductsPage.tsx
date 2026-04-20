@@ -30,6 +30,7 @@ export const StoreProductsPage = () => {
     const [showForm, setShowForm] = useState(false);
     const [filterPromotional, setFilterPromotional] = useState("all");
     const [upcSearch, setUpcSearch] = useState("");
+    const [nameSearch, setNameSearch] = useState("");
     const [sortBy, setSortBy] = useState<"quantity" | "name">("quantity");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -80,9 +81,11 @@ export const StoreProductsPage = () => {
     const getProductName = (id: number) =>
         products.find((p) => p.id === id)?.name || String(id);
 
-    const filteredStoreProducts = storeProducts.filter((sp) =>
-        !upcSearch.trim() || sp.upc.includes(upcSearch.trim())
-    );
+    const filteredStoreProducts = storeProducts.filter((sp) => {
+        const matchUpc = !upcSearch.trim() || sp.upc.includes(upcSearch.trim());
+        const matchName = !nameSearch.trim() || getProductName(sp.product_id).toLowerCase().includes(nameSearch.trim().toLowerCase());
+        return matchUpc && matchName;
+    });
 
     const sortedStoreProducts = [...filteredStoreProducts].sort((a, b) => {
         if (sortBy === "name") {
@@ -178,6 +181,13 @@ export const StoreProductsPage = () => {
                     placeholder="Search by UPC..."
                     value={upcSearch}
                     onChange={(e) => setUpcSearch(e.target.value)}
+                    style={{ flex: 1 }}
+                />
+                <input
+                    className={styles.searchInput}
+                    placeholder="Search by product name..."
+                    value={nameSearch}
+                    onChange={(e) => setNameSearch(e.target.value)}
                     style={{ flex: 1 }}
                 />
                 <select
