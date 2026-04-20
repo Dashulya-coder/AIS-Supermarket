@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-    getCashierSalesGrouped,
-    getCustomersAllPromotional,
     getProductQuantity,
     getSalesByCashier,
     getSalesTotal,
@@ -46,21 +44,6 @@ type Employee = {
     name: string;
     role?: string;
     position?: string;
-};
-
-type CashierSalesGroupedRow = {
-    cashier_id: string;
-    surname: string;
-    name: string;
-    receipts_count: number;
-    total_sales: number;
-};
-
-type CustomersAllPromotionalRow = {
-    card_number: string;
-    surname: string;
-    name: string;
-    percent: number;
 };
 
 const ResultCard = ({
@@ -121,19 +104,10 @@ export const ReportsPage = () => {
     const [productQuantityResult, setProductQuantityResult] =
         useState<ProductQuantityResult | null>(null);
 
-    const [groupedFrom, setGroupedFrom] = useState("2026-04-01 00:00:00");
-    const [groupedTo, setGroupedTo] = useState("2026-04-30 23:59:59");
-    const [cashierSalesGrouped, setCashierSalesGrouped] = useState<
-        CashierSalesGroupedRow[]
-    >([]);
-
-    const [customersAllPromotional, setCustomersAllPromotional] = useState<
-        CustomersAllPromotionalRow[]
-    >([]);
-
     const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [error, setError] = useState("");
+
     useEffect(() => {
         const loadOptions = async () => {
             try {
@@ -205,33 +179,6 @@ export const ReportsPage = () => {
         }
     };
 
-    const handleCashierSalesGrouped = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        try {
-            setError("");
-            const data = await getCashierSalesGrouped(
-                groupedFrom.trim(),
-                groupedTo.trim()
-            );
-            setCashierSalesGrouped(Array.isArray(data) ? data : []);
-        } catch (err: any) {
-            setError(err?.response?.data?.error || "Failed to load grouped report");
-        }
-    };
-
-    const handleCustomersAllPromotional = async () => {
-        try {
-            setError("");
-            const data = await getCustomersAllPromotional();
-            setCustomersAllPromotional(Array.isArray(data) ? data : []);
-        } catch (err: any) {
-            setError(
-                err?.response?.data?.error || "Failed to load double negation report"
-            );
-        }
-    };
-
     const cashiers = employees.filter(
         (e) => e.role === "Cashier" || e.position === "Cashier"
     );
@@ -251,7 +198,10 @@ export const ReportsPage = () => {
             <h1 className={styles.pageTitle}>Reports</h1>
 
             {error && (
-                <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>
+                <div
+                    className={styles.errorMsg}
+                    style={{ marginTop: 12, marginBottom: 12 }}
+                >
                     {error}
                 </div>
             )}
@@ -304,6 +254,7 @@ export const ReportsPage = () => {
                         Get Report
                     </button>
                 </form>
+
                 {salesByCashierResult && (
                     <ResultCard
                         items={[
@@ -428,110 +379,6 @@ export const ReportsPage = () => {
                             },
                         ]}
                     />
-                )}
-            </div>
-
-            <div className={styles.card} style={{ marginTop: 24 }}>
-                <h2 className={styles.modalTitle}>Sales by Cashiers for Selected Period</h2>
-                <form
-                    onSubmit={handleCashierSalesGrouped}
-                    style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-                >
-                    <div className={styles.field}>
-                        <label className={styles.label}>From</label>
-                        <input
-                            className={styles.input}
-                            value={groupedFrom}
-                            onChange={(e) => setGroupedFrom(e.target.value)}
-                        />
-                    </div>
-
-                    <div className={styles.field}>
-                        <label className={styles.label}>To</label>
-                        <input
-                            className={styles.input}
-                            value={groupedTo}
-                            onChange={(e) => setGroupedTo(e.target.value)}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        className={`${styles.btn} ${styles.btnPrimary}`}
-                        style={{ alignSelf: "flex-end" }}
-                    >
-                        Run Grouped Query
-                    </button>
-                </form>
-
-                {cashierSalesGrouped.length === 0 ? (
-                    <p style={{ marginTop: 16 }}>No data found</p>
-                ) : (
-                    <div style={{ overflowX: "auto", marginTop: 16 }}>
-                        <table className={styles.table}>
-                            <thead>
-                            <tr>
-                                <th>Cashier ID</th>
-                                <th>Surname</th>
-                                <th>Name</th>
-                                <th>Receipts Count</th>
-                                <th>Total Sales</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {cashierSalesGrouped.slice(0, 5).map((row) => (
-                                <tr key={row.cashier_id}>
-                                    <td>{row.cashier_id}</td>
-                                    <td>{row.surname}</td>
-                                    <td>{row.name}</td>
-                                    <td>{row.receipts_count}</td>
-                                    <td>{Number(row.total_sales).toFixed(2)} ₴</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            <div className={styles.card} style={{ marginTop: 24 }}>
-                <h2 className={styles.modalTitle}>
-                    Customers Who Bought All Promotional Products
-                </h2>
-
-                <button
-                    type="button"
-                    className={`${styles.btn} ${styles.btnPrimary}`}
-                    onClick={handleCustomersAllPromotional}
-                >
-                    Run Double Negation Query
-                </button>
-
-                {customersAllPromotional.length === 0 ? (
-                    <p style={{ marginTop: 16 }}>No data found</p>
-                ) : (
-                    <div style={{ overflowX: "auto", marginTop: 16 }}>
-                        <table className={styles.table}>
-                            <thead>
-                            <tr>
-                                <th>Card Number</th>
-                                <th>Surname</th>
-                                <th>Name</th>
-                                <th>Percent</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {customersAllPromotional.slice(0, 5).map((row) => (
-                                <tr key={row.card_number}>
-                                    <td>{row.card_number}</td>
-                                    <td>{row.surname}</td>
-                                    <td>{row.name}</td>
-                                    <td>{row.percent}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
                 )}
             </div>
         </div>

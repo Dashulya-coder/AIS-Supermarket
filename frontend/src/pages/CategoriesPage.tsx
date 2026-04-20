@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createCategory, deleteCategory, getCategories } from "../api/categoriesApi";
 import { useAuth } from "../context/AuthContext";
 import styles from "../components/common.module.css";
@@ -10,9 +10,12 @@ type Category = {
 
 export const CategoriesPage = () => {
     const { user } = useAuth();
+    const isManager = user?.role === "Manager";
+    const isCashier = user?.role === "Cashier";
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [name, setName] = useState("");
+    const [search, setSearch] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -21,7 +24,7 @@ export const CategoriesPage = () => {
             setLoading(true);
             setError("");
             const data = await getCategories();
-            setCategories(data);
+            setCategories(Array.isArray(data) ? data : []);
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to load categories");
         } finally {
@@ -38,6 +41,7 @@ export const CategoriesPage = () => {
             setError("Category name cannot be empty");
             return;
         }
+
         try {
             setError("");
             await createCategory(name.trim());
@@ -58,23 +62,30 @@ export const CategoriesPage = () => {
         }
     };
 
-    const isManager = user?.role === "Manager";
+    const filteredCategories = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return categories;
+
+        return categories.filter((category) =>
+            category.name.toLowerCase().includes(query)
+        );
+    }, [categories, search]);
 
     return (
         <div className={styles.page} style={{ maxWidth: 700 }}>
             <h1 className={styles.pageTitle}>Categories</h1>
 
-            <div className={styles.filterBar} style={{ marginTop: 16 }}>
-                <input
-                    className={styles.searchInput}
-                    type="text"
-                    placeholder="New category name..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                    style={{ flex: 1 }}
-                />
-                {isManager && (
+            {isManager && (
+                <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                    <input
+                        className={styles.searchInput}
+                        type="text"
+                        placeholder="New category name..."
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                        style={{ flex: 1 }}
+                    />
                     <button
                         type="button"
                         onClick={handleCreate}
@@ -82,8 +93,21 @@ export const CategoriesPage = () => {
                     >
                         + Add
                     </button>
-                )}
-            </div>
+                </div>
+            )}
+
+            {isCashier && (
+                <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                    <input
+                        className={styles.searchInput}
+                        type="text"
+                        placeholder="Search category..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        style={{ flex: 1 }}
+                    />
+                </div>
+            )}
 
             {error && (
                 <div className={styles.errorMsg} style={{ marginBottom: 16, marginTop: 12 }}>
@@ -93,7 +117,7 @@ export const CategoriesPage = () => {
 
             {loading ? (
                 <div className={styles.loading}>Loading...</div>
-            ) : categories.length === 0 ? (
+            ) : filteredCategories.length === 0 ? (
                 <div className={styles.empty}>
                     <p>No categories found</p>
                 </div>
@@ -101,31 +125,29 @@ export const CategoriesPage = () => {
                 <div className={styles.tableWrap} style={{ marginTop: 24 }}>
                     <table className={styles.table}>
                         <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                {isManager && (
-                                    <th style={{ textAlign: "right" }}>Actions</th>
-                                )}
-                            </tr>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            {isManager && <th style={{ textAlign: "right" }}>Actions</th>}
+                        </tr>
                         </thead>
                         <tbody>
-                            {categories.map((category) => (
-                                <tr key={category.id}>
-                                    <td>{category.id}</td>
-                                    <td>{category.name}</td>
-                                    {isManager && (
-                                        <td style={{ textAlign: "right" }}>
-                                            <button
-                                                className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
-                                                onClick={() => handleDelete(category.id)}
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
+                        {filteredCategories.map((category) => (
+                            <tr key={category.id}>
+                                <td>{category.id}</td>
+                                <td>{category.name}</td>
+                                {isManager && (
+                                    <td style={{ textAlign: "right" }}>
+                                        <button
+                                            className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                                            onClick={() => handleDelete(category.id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>
