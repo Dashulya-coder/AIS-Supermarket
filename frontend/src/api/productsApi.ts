@@ -20,6 +20,17 @@ export const createProduct = async (
     return res.data;
 };
 
+export const updateProduct = async (
+    id: number,
+    name: string,
+    category_id: number,
+    producer: string,
+    characteristics: string
+) => {
+    const res = await api.put(`/products/${id}`, { name, category_id, producer, characteristics });
+    return res.data;
+};
+
 export const deleteProduct = async (id: number) => {
     const res = await api.delete(`/products/${id}`);
     return res.data;

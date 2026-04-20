@@ -10,6 +10,11 @@ export const createCategory = async (name: string) => {
     return res.data;
 };
 
+export const updateCategory = async (id: number, name: string) => {
+    const res = await api.put(`/categories/${id}`, { name });
+    return res.data;
+};
+
 export const deleteCategory = async (id: number) => {
     const res = await api.delete(`/categories/${id}`);
     return res.data;
