@@ -29,6 +29,7 @@ export const StoreProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [filterPromotional, setFilterPromotional] = useState("all");
+    const [upcSearch, setUpcSearch] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -67,6 +68,14 @@ export const StoreProductsPage = () => {
     };
 
     useEffect(() => { loadData(); }, [filterPromotional]);
+
+    // UPC search logic (п.14)
+    const foundByUpc = upcSearch.trim()
+        ? storeProducts.find((sp) => sp.upc === upcSearch.trim())
+        : null;
+    const foundProduct = foundByUpc
+        ? products.find((p) => p.id === foundByUpc.product_id)
+        : null;
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -140,11 +149,22 @@ export const StoreProductsPage = () => {
     const getProductName = (id: number) =>
         products.find((p) => p.id === id)?.name || String(id);
 
+    const filteredStoreProducts = storeProducts.filter((sp) =>
+        !upcSearch.trim() || sp.upc.includes(upcSearch.trim())
+    );
+
     return (
         <div className={styles.page}>
             <h1 className={styles.pageTitle}>Store Products</h1>
 
             <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                <input
+                    className={styles.searchInput}
+                    placeholder="Search by UPC..."
+                    value={upcSearch}
+                    onChange={(e) => setUpcSearch(e.target.value)}
+                    style={{ flex: 1 }}
+                />
                 <select
                     className={styles.select}
                     style={{ width: "auto" }}
@@ -164,6 +184,36 @@ export const StoreProductsPage = () => {
                     </button>
                 )}
             </div>
+
+            {/* UPC result card */}
+            {foundByUpc && foundProduct && (
+                <div className={styles.card} style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>UPC</p>
+                        <p style={{ fontWeight: 600 }}>{foundByUpc.upc}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Product name</p>
+                        <p style={{ fontWeight: 600 }}>{foundProduct.name}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Selling price</p>
+                        <p style={{ fontWeight: 600 }}>{foundByUpc.selling_price} ₴</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Quantity</p>
+                        <p style={{ fontWeight: 600 }}>{foundByUpc.products_number}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Characteristics</p>
+                        <p style={{ fontWeight: 600 }}>{foundProduct.characteristics}</p>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Promotional</p>
+                        <p style={{ fontWeight: 600 }}>{foundByUpc.promotional_product ? "Yes" : "No"}</p>
+                    </div>
+                </div>
+            )}
 
             {showForm && isManager && (
                 <div className={styles.card} style={{ marginTop: 16 }}>
@@ -208,7 +258,6 @@ export const StoreProductsPage = () => {
                 </div>
             )}
 
-            {/* Edit Modal */}
             {editingProduct && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal}>
@@ -257,7 +306,7 @@ export const StoreProductsPage = () => {
 
             {loading ? (
                 <div className={styles.loading}>Loading...</div>
-            ) : storeProducts.length === 0 ? (
+            ) : filteredStoreProducts.length === 0 ? (
                 <div className={styles.empty}><p>No store products found</p></div>
             ) : (
                 <div className={styles.tableWrap} style={{ marginTop: 24 }}>
@@ -274,7 +323,7 @@ export const StoreProductsPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {storeProducts.map((sp) => (
+                            {filteredStoreProducts.map((sp) => (
                                 <tr key={sp.upc}>
                                     <td><code style={{ fontSize: 13 }}>{sp.upc}</code></td>
                                     <td>{sp.upc_prom ?? "—"}</td>
@@ -290,18 +339,8 @@ export const StoreProductsPage = () => {
                                     {isManager && (
                                         <td style={{ textAlign: "right" }}>
                                             <div className={styles.actions} style={{ justifyContent: "flex-end" }}>
-                                                <button
-                                                    className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm}`}
-                                                    onClick={() => handleEditStart(sp)}
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
-                                                    onClick={() => handleDelete(sp.upc)}
-                                                >
-                                                    Delete
-                                                </button>
+                                                <button className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm}`} onClick={() => handleEditStart(sp)}>Edit</button>
+                                                <button className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`} onClick={() => handleDelete(sp.upc)}>Delete</button>
                                             </div>
                                         </td>
                                     )}
