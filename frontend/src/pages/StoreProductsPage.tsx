@@ -30,6 +30,7 @@ export const StoreProductsPage = () => {
     const [showForm, setShowForm] = useState(false);
     const [filterPromotional, setFilterPromotional] = useState("all");
     const [upcSearch, setUpcSearch] = useState("");
+    const [sortBy, setSortBy] = useState<"quantity" | "name">("quantity");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -69,13 +70,26 @@ export const StoreProductsPage = () => {
 
     useEffect(() => { loadData(); }, [filterPromotional]);
 
-    // UPC search logic (п.14)
     const foundByUpc = upcSearch.trim()
         ? storeProducts.find((sp) => sp.upc === upcSearch.trim())
         : null;
     const foundProduct = foundByUpc
         ? products.find((p) => p.id === foundByUpc.product_id)
         : null;
+
+    const getProductName = (id: number) =>
+        products.find((p) => p.id === id)?.name || String(id);
+
+    const filteredStoreProducts = storeProducts.filter((sp) =>
+        !upcSearch.trim() || sp.upc.includes(upcSearch.trim())
+    );
+
+    const sortedStoreProducts = [...filteredStoreProducts].sort((a, b) => {
+        if (sortBy === "name") {
+            return getProductName(a.product_id).localeCompare(getProductName(b.product_id));
+        }
+        return b.products_number - a.products_number;
+    });
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -146,13 +160,6 @@ export const StoreProductsPage = () => {
         }
     };
 
-    const getProductName = (id: number) =>
-        products.find((p) => p.id === id)?.name || String(id);
-
-    const filteredStoreProducts = storeProducts.filter((sp) =>
-        !upcSearch.trim() || sp.upc.includes(upcSearch.trim())
-    );
-
     return (
         <div className={styles.page}>
             <h1 className={styles.pageTitle}>Store Products</h1>
@@ -175,6 +182,20 @@ export const StoreProductsPage = () => {
                     <option value="true">Promotional only</option>
                     <option value="false">Non-promotional only</option>
                 </select>
+                <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                        className={`${styles.btn} ${styles.btnSm} ${sortBy === "quantity" ? styles.btnPrimary : styles.btnSecondary}`}
+                        onClick={() => setSortBy("quantity")}
+                    >
+                        By quantity
+                    </button>
+                    <button
+                        className={`${styles.btn} ${styles.btnSm} ${sortBy === "name" ? styles.btnPrimary : styles.btnSecondary}`}
+                        onClick={() => setSortBy("name")}
+                    >
+                        By name
+                    </button>
+                </div>
                 {isManager && (
                     <button
                         className={`${styles.btn} ${styles.btnPrimary}`}
@@ -185,7 +206,6 @@ export const StoreProductsPage = () => {
                 )}
             </div>
 
-            {/* UPC result card */}
             {foundByUpc && foundProduct && (
                 <div className={styles.card} style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
@@ -306,7 +326,7 @@ export const StoreProductsPage = () => {
 
             {loading ? (
                 <div className={styles.loading}>Loading...</div>
-            ) : filteredStoreProducts.length === 0 ? (
+            ) : sortedStoreProducts.length === 0 ? (
                 <div className={styles.empty}><p>No store products found</p></div>
             ) : (
                 <div className={styles.tableWrap} style={{ marginTop: 24 }}>
@@ -323,7 +343,7 @@ export const StoreProductsPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredStoreProducts.map((sp) => (
+                            {sortedStoreProducts.map((sp) => (
                                 <tr key={sp.upc}>
                                     <td><code style={{ fontSize: 13 }}>{sp.upc}</code></td>
                                     <td>{sp.upc_prom ?? "—"}</td>
