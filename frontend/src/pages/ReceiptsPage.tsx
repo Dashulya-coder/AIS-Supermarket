@@ -236,7 +236,15 @@ export const ReceiptsPage = () => {
 
     return (
         <div className={styles.page}>
-            <h1 className={styles.pageTitle}>Receipts</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 className={styles.pageTitle}>Receipts</h1>
+                <button
+                    className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                    onClick={() => window.print()}
+                >
+                    🖨 Print
+                </button>
+            </div>
 
             {error && <div className={styles.errorMsg} style={{ marginTop: 12, marginBottom: 12 }}>{error}</div>}
 

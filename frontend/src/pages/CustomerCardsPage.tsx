@@ -140,9 +140,17 @@ export const CustomerCardsPage = () => {
 
     return (
         <div className={styles.page}>
-            <h1 className={styles.pageTitle}>Customer Cards</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 className={styles.pageTitle}>Customer Cards</h1>
+                <button
+                    className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                    onClick={() => window.print()}
+                >
+                    🖨 Print
+                </button>
+            </div>
 
-            <div className={styles.filterBar} style={{ marginTop: 16 }}>
+            <div className={`${styles.filterBar} no-print`} style={{ marginTop: 16 }}>
                 <form onSubmit={handleSearch} style={{ display: "flex", gap: 12, flex: 1, flexWrap: "wrap" }}>
                     <input className={styles.searchInput} placeholder="Search by surname..." value={surnameFilter} onChange={(e) => setSurnameFilter(e.target.value)} />
                     <input className={styles.searchInput} type="number" min="0" placeholder="Filter by percent..." style={{ maxWidth: 180 }} value={percentFilter} onChange={(e) => setPercentFilter(e.target.value)} />

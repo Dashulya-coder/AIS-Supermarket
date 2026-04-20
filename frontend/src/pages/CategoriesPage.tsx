@@ -99,10 +99,18 @@ export const CategoriesPage = () => {
 
     return (
         <div className={styles.page} style={{ maxWidth: 700 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1 className={styles.pageTitle}>Categories</h1>
+            <button
+                className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                onClick={() => window.print()}
+            >
+                🖨 Print
+            </button>
+        </div>
 
             {isManager && (
-                <div className={styles.filterBar} style={{ marginTop: 16 }}>
+                <div className={`${styles.filterBar} no-print`} style={{ marginTop: 16 }}>
                     <input
                         className={styles.searchInput}
                         type="text"

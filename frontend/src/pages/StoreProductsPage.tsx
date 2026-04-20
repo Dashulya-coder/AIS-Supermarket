@@ -162,9 +162,17 @@ export const StoreProductsPage = () => {
 
     return (
         <div className={styles.page}>
-            <h1 className={styles.pageTitle}>Store Products</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 className={styles.pageTitle}>Store Products</h1>
+                <button
+                    className={`${styles.btn} ${styles.btnSecondary} no-print`}
+                    onClick={() => window.print()}
+                >
+                    🖨 Print
+                </button>
+            </div>
 
-            <div className={styles.filterBar} style={{ marginTop: 16 }}>
+            <div className={`${styles.filterBar} no-print`} style={{ marginTop: 16 }}>
                 <input
                     className={styles.searchInput}
                     placeholder="Search by UPC..."
