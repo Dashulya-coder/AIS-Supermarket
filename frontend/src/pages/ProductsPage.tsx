@@ -24,6 +24,8 @@ export const ProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
+    const [filterCategoryId, setFilterCategoryId] = useState<number | "">("");
+    const [sortByName, setSortByName] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -114,10 +116,14 @@ export const ProductsPage = () => {
     const getCategoryName = (id: number) =>
         categories.find((c) => c.id === id)?.name || String(id);
 
-    const filtered = products.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.producer.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = products
+    .filter((p) => {
+        const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+            p.producer.toLowerCase().includes(search.toLowerCase());
+        const matchCategory = !filterCategoryId || p.category_id === Number(filterCategoryId);
+        return matchSearch && matchCategory;
+    })
+    .sort((a, b) => sortByName ? a.name.localeCompare(b.name) : 0);
 
     return (
         <div className={styles.page}>
@@ -139,6 +145,17 @@ export const ProductsPage = () => {
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ flex: 1 }}
                 />
+                <select
+                    className={styles.select}
+                    style={{ width: "auto" }}
+                    value={filterCategoryId}
+                    onChange={(e) => setFilterCategoryId(e.target.value ? Number(e.target.value) : "")}
+                >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
                 {isManager && (
                     <button
                         className={`${styles.btn} ${styles.btnPrimary}`}
