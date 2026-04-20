@@ -20,6 +20,7 @@ export const createProduct = async (
     return res.data;
 };
 
+
 export const updateProduct = async (
     id: number,
     name: string,
