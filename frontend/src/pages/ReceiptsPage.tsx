@@ -387,6 +387,18 @@ export const ReceiptsPage = () => {
                         <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: "flex-end" }}>
                             Load
                         </button>
+                        <button
+                            type="button"
+                            className={`${styles.btn} ${styles.btnSecondary}`}
+                            style={{ alignSelf: "flex-end" }}
+                            onClick={() => {
+                                const today = new Date().toISOString().split("T")[0];
+                                setFrom(`${today} 00:00:00`);
+                                setTo(`${today} 23:59:59`);
+                            }}
+                        >
+                            Today
+                        </button>
                     </form>
                     {myReceipts.length > 0 && <ReceiptTable receipts={myReceipts} />}
                     {myReceipts.length === 0 && <p style={{ color: "var(--text-muted)", marginTop: 12 }}>No receipts found</p>}
