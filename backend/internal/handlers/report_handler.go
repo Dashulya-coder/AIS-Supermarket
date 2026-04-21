@@ -69,3 +69,25 @@ func (h *ReportHandler) GetTotalQuantitySoldByUPC(c *gin.Context) {
 		"total_quantity": total,
 	})
 }
+
+func (h *ReportHandler) GetSalesSummaryByCashiers(c *gin.Context) {
+	from := c.Query("from")
+	to := c.Query("to")
+
+	results, err := h.service.GetSalesSummaryByCashiers(from, to)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func (h *ReportHandler) GetClientsWithOnlyPromoProducts(c *gin.Context) {
+	results, err := h.service.GetClientsWithOnlyPromoProducts()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, results)
+}

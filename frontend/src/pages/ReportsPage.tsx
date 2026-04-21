@@ -3,6 +3,8 @@ import {
     getProductQuantity,
     getSalesByCashier,
     getSalesTotal,
+    getSalesSummary,
+    getClientsWithOnlyPromoProducts  
 } from "../api/reportsApi";
 import { useAuth } from "../context/AuthContext";
 import { getStoreProducts } from "../api/storeProductsApi";
@@ -108,6 +110,12 @@ export const ReportsPage = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [error, setError] = useState("");
 
+    const [summaryFrom, setSummaryFrom] = useState("2026-04-01 00:00:00");
+    const [summaryTo, setSummaryTo] = useState("2026-04-30 23:59:59");
+    const [summaryResult, setSummaryResult] = useState<any[]>([]);
+
+    const [promoClientsResult, setPromoClientsResult] = useState<any[]>([]);
+
     useEffect(() => {
         const loadOptions = async () => {
             try {
@@ -174,6 +182,27 @@ export const ReportsPage = () => {
                 productTo.trim()
             );
             setProductQuantityResult(data);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Failed to load report");
+        }
+    };
+
+    const handleSalesSummary = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setError("");
+            const data = await getSalesSummary(summaryFrom.trim(), summaryTo.trim());
+            setSummaryResult(Array.isArray(data) ? data : []);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Failed to load report");
+        }
+    };
+
+    const handlePromoClients = async () => {
+        try {
+            setError("");
+            const data = await getClientsWithOnlyPromoProducts();
+            setPromoClientsResult(Array.isArray(data) ? data : []);
         } catch (err: any) {
             setError(err?.response?.data?.error || "Failed to load report");
         }
@@ -390,6 +419,91 @@ export const ReportsPage = () => {
                             },
                         ]}
                     />
+                )}
+            </div>
+            <div className={styles.card} style={{ marginTop: 24 }}>
+                <h2 className={styles.modalTitle}>Sales Summary by All Cashiers</h2>
+                <form onSubmit={handleSalesSummary} style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>From</label>
+                        <input className={styles.input} value={summaryFrom} onChange={(e) => setSummaryFrom(e.target.value)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label className={styles.label}>To</label>
+                        <input className={styles.input} value={summaryTo} onChange={(e) => setSummaryTo(e.target.value)} />
+                    </div>
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: "flex-end" }}>
+                        Get Report
+                    </button>
+                </form>
+
+                {summaryResult.length > 0 && (
+                    <div className={styles.tableWrap} style={{ marginTop: 16 }}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Surname</th>
+                                    <th>Name</th>
+                                    <th>Total Receipts</th>
+                                    <th>Total Sales</th>
+                                    <th>Total VAT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {summaryResult.map((row) => (
+                                    <tr key={row.id}>
+                                        <td>{row.id}</td>
+                                        <td>{row.surname}</td>
+                                        <td>{row.name}</td>
+                                        <td>{row.total_receipts}</td>
+                                        <td>{Number(row.total_sales).toFixed(2)} ₴</td>
+                                        <td>{Number(row.total_vat).toFixed(2)} ₴</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {summaryResult.length === 0 && <p style={{ color: "var(--text-muted)", marginTop: 12 }}>No data found</p>}
+            </div>
+            <div className={styles.card} style={{ marginTop: 24 }}>
+                <h2 className={styles.modalTitle}>Clients Who Bought Only Promotional Products</h2>
+                <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    onClick={handlePromoClients}
+                >
+                    Get Report
+                </button>
+
+                {promoClientsResult.length > 0 && (
+                    <div className={styles.tableWrap} style={{ marginTop: 16 }}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Card Number</th>
+                                    <th>Surname</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Discount %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {promoClientsResult.map((row) => (
+                                    <tr key={row.card_number}>
+                                        <td>{row.card_number}</td>
+                                        <td>{row.surname}</td>
+                                        <td>{row.name}</td>
+                                        <td>{row.phone}</td>
+                                        <td>{row.percent}%</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {promoClientsResult.length === 0 && (
+                    <p style={{ color: "var(--text-muted)", marginTop: 12 }}>No data found</p>
                 )}
             </div>
         </div>

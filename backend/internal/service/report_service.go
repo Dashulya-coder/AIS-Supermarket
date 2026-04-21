@@ -55,3 +55,18 @@ func (s *ReportService) GetTotalQuantitySoldByUPC(upc, from, to string) (int, er
 
 	return s.repo.GetTotalQuantitySoldByUPC(upc, from, to)
 }
+
+func (s *ReportService) GetSalesSummaryByCashiers(from, to string) ([]map[string]interface{}, error) {
+	from = strings.TrimSpace(from)
+	to = strings.TrimSpace(to)
+
+	if from == "" || to == "" {
+		return nil, errors.New("from and to are required")
+	}
+
+	return s.repo.GetSalesSummaryByCashiers(from, to)
+}
+
+func (s *ReportService) GetClientsWithOnlyPromoProducts() ([]map[string]interface{}, error) {
+	return s.repo.GetClientsWithOnlyPromoProducts()
+}

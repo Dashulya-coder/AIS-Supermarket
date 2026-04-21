@@ -46,3 +46,13 @@ export const getCustomersAllPromotional = async () => {
     const res = await api.get("/reports/customers-all-promotional");
     return res.data;
 };
+
+export const getSalesSummary = async (from: string, to: string) => {
+    const res = await api.get(`/reports/sales-summary?from=${from}&to=${to}`);
+    return res.data;
+};
+
+export const getClientsWithOnlyPromoProducts = async () => {
+    const res = await api.get("/reports/promo-clients");
+    return res.data;
+};

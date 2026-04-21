@@ -117,6 +117,8 @@ func main() {
 		managerGroup.GET("/reports/sales-by-cashier", reportHandler.GetTotalSalesByCashierAndPeriod)
 		managerGroup.GET("/reports/sales-total", reportHandler.GetTotalSalesByPeriod)
 		managerGroup.GET("/reports/product-quantity", reportHandler.GetTotalQuantitySoldByUPC)
+		managerGroup.GET("/reports/sales-summary", reportHandler.GetSalesSummaryByCashiers)
+		managerGroup.GET("/reports/promo-clients", reportHandler.GetClientsWithOnlyPromoProducts)
 	}
 
 	// routes for Manager and Cashier
